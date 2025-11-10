@@ -1,0 +1,1665 @@
+---
+description: CarCutter API Documentation
+globs:
+alwaysApply: false
+---
+
+"openapi": "3.1.0",
+"info": {
+"description": "Global #1 visual AI editing and optimisation solution for the automotive industry",
+"version": "2.60.65",
+"title": "Car-Cutter API",
+"termsOfService": "https://www.car-cutter.com/terms",
+"contact": {
+"email": "hello@car-cutter.com"
+},
+"license": {
+"name": "Proprietary",
+"url": "https://www.car-cutter.com"
+}
+},
+"servers": [
+{
+"url": "https://api.car-cutter.com",
+"description": "Public API Server."
+}
+],
+"security": [
+{
+"api_key": []
+}
+],
+"tags": [
+{
+"name": "vehicle",
+"description": "Vehicle API",
+"x-displayName": "Vehicle API"
+},
+{
+"name": "asynchronous",
+"description": "Asynchronous API",
+"x-displayName": "Asynchronous API"
+},
+{
+"name": "synchronous",
+"description": "Synchronous API",
+"x-displayName": "Synchronous API"
+},
+{
+"name": "feature",
+"description": "Feature API",
+"x-displayName": "Feature API"
+}
+],
+"externalDocs": {
+"description": "Find out more about Car-Cutter",
+"url": "https://www.car-cutter.com"
+},
+"paths": {
+"/vehicle/submission": {
+"post": {
+"summary": "Add or Update a Vehicle",
+"description": "If a vehicle with that id already exists, it is updated and its status is set to new.",
+"tags": [
+"vehicle"
+],
+"consumes": [
+"application/form-data"
+],
+"produces": [
+"application/json"
+],
+"requestBody": {
+"content": {
+"multipart/form-data": {
+"schema": {
+"type": "object",
+"required": [
+"vehicle_id"
+],
+"properties": {
+"vehicle_id": {
+"type": "string",
+"description": "Use the VIN if possible"
+},
+"vehicle_manufacturer": {
+"type": "string",
+"example": "Audi"
+},
+"vehicle_model": {
+"type": "string",
+"example": "A4 B8 2.0 TDI"
+},
+"vehicle_model_ext": {
+"type": "string"
+},
+"vehicle_color": {
+"type": "string",
+"example": "Moroblau Metallic"
+},
+"vehicle_location": {
+"type": "string"
+},
+"vehicle_lot": {
+"type": "string"
+},
+"custom_reference": {
+"type": "string"
+},
+"suggested_guideline_id": {
+"type": "string",
+"description": "guideline that will be suggested when shooting",
+"example": "guideline-2"
+}
+}
+}
+}
+}
+},
+"responses": {
+"200": {
+"content": {
+"application/json": {
+"schema": {
+"type": "object",
+"properties": {
+"vehicle": {
+"$ref": "#/components/schemas/Vehicle"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/vehicle/list": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "customer"
+                ],
+                "properties": {
+                  "customer": {
+                    "type": "string",
+                    "description": "The user id"
+                  },
+                  "filters": {
+                    "type": "array",
+                    "description": "Only retrieve vehicles which have a match on all specified (column, values) pairs.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "column": {
+                          "type": "string"
+                        },
+                        "values": {
+                          "type": "array"
+                        }
+                      }
+                    }
+                  },
+                  "sort_by": {
+                    "type": "string",
+                    "enum": [
+                      "last_update"
+                    ],
+                    "description": "Field to sort values on"
+                  },
+                  "sort_direction": {
+                    "type": "string",
+                    "enum": [
+                      "ASC",
+                      "DESC"
+                    ]
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Return up to n results"
+                  },
+                  "offset": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Skip the first n results"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Vehicle"
+}
+}
+}
+},
+"description": "Successful response"
+}
+},
+"tags": [
+"vehicle"
+],
+"summary": "List Vehicles"
+}
+},
+"/vehicle/status": {
+"get": {
+"summary": "Get Vehicle",
+"description": "The status can be new, active or deleted.",
+"parameters": [
+{
+"name": "vehicle_id",
+"in": "query",
+"required": true,
+"schema": {
+"type": "string"
+}
+}
+],
+"responses": {
+"200": {
+"content": {
+"application/json": {
+"schema": {
+"type": "object",
+"properties": {
+"vehicle": {
+"$ref": "#/components/schemas/Vehicle"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "tags": [
+          "vehicle"
+        ]
+      }
+    },
+    "/vehicle/delete": {
+      "delete": {
+        "summary": "Delete Vehicle",
+        "description": "Sets the status of a vehicle to DELETED.",
+        "parameters": [
+          {
+            "name": "vehicle_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "vehicle": {
+                      "$ref": "#/components/schemas/Vehicle"
+}
+}
+}
+}
+},
+"description": "Successful response"
+}
+},
+"tags": [
+"vehicle"
+]
+}
+},
+"/vehicle/shotlist": {
+"get": {
+"tags": [
+"vehicle"
+],
+"responses": {
+"200": {
+"content": {
+"application/json": {
+"schema": {
+"type": "object",
+"properties": {
+"vehicles": {
+"type": "array",
+"items": {
+"$ref": "#/components/schemas/Vehicle"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        },
+        "summary": "List Vehicles to Shoot",
+        "description": "Return all vehicles with status new"
+      }
+    },
+    "/vehicle/composition/single-segment": {
+      "post": {
+        "tags": [
+          "synchronous"
+        ],
+        "summary": "Synchronously process an image",
+        "description": "",
+        "operationId": "syncSubmit",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "image",
+                  "image_url",
+                  "cut_type"
+                ],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Upload the image that you want to process. Either this or `image_url` is required."
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "description": "URL to the image that you want to process. Either this or `image` is required."
+                  },
+                  "cut_type": {
+                    "type": "string",
+                    "description": "The cut type to perform on the submitted image.",
+                    "$ref": "#/definitions/CutTypeSchema"
+},
+"location": {
+"type": "string",
+"description": "The location of the store at which this image is taken."
+},
+"guideline": {
+"type": "string",
+"description": "The guideline to use to process this image, different guidelines can specify different processing behaviours."
+},
+"processing_speed": {
+"description": "The processing speed defines how fast the image will be cut and retouched",
+"$ref": "#/definitions/ProcessingSpeedSchema"
+                  },
+                  "resolution": {
+                    "description": "The pixel resolution for the output image, width and height separated by `x`",
+                    "type": "string",
+                    "example": "1600x1200"
+                  },
+                  "scene_id": {
+                    "description": "The ID of the 3D scene that you want to use as the background for the image.",
+                    "type": "string"
+                  },
+                  "padding_id": {
+                    "description": "The padding ID defines how big the border around your car should be on each side. Padding IDs refer to predefined paddings which are available on the server. If you want to use custom paddings, use the other padding parameters.",
+                    "type": "string"
+                  },
+                  "padding_x": {
+                    "description": "How much border there should be around the car on the left and right side (relative number between 0 and 1).",
+                    "type": "string"
+                  },
+                  "padding_y": {
+                    "description": "How much border there should be around the car on the top and bottom of the image (relative number between 0 and 1).",
+                    "type": "string"
+                  },
+                  "padding_add_bottom": {
+                    "description": "Make the border at the bottom of the image wider (relative number between 0 and 1).",
+                    "type": "string"
+                  },
+                  "padding_add_top": {
+                    "description": "Make the border at the top of the image wider (relative number between 0 and 1).",
+                    "type": "string"
+                  },
+                  "padding_add_left": {
+                    "description": "Make the border at the left side of the image wider (relative number between 0 and 1).",
+                    "type": "string"
+                  },
+                  "padding_add_right": {
+                    "description": "Make the border at the right side of the image wider (relative number between 0 and 1).",
+                    "type": "string"
+                  },
+                  "offset_background": {
+                    "description": "Set this to `true` for turntable backgrounds, to `false` for straight edge backgrounds.",
+                    "type": "string"
+                  },
+                  "blurring_license_plate": {
+                    "type": "bool",
+                    "description": "Whether license plates should be detected and blurred."
+                  },
+                  "underground_3d": {
+                    "type": "bool",
+                    "description": "Enables or disables the 3D underground. We recommend that you use 3D scenes insteads. If you don't use 3D scenes, 3D underground is the next best option. Only disable 3D undergrounds if you want to submit your own underground as a JPG image."
+                  },
+                  "upload_only": {
+                    "type": "bool",
+                    "description": "Whether this image should only be uploaded and put into a queue without immediate response. This attribute is deprecated, use the asynchronous API instead.",
+                    "deprecated": true
+                  },
+                  "from_manual_retouching": {
+                    "type": "bool",
+                    "description": "Only used internally. Specifies whether an image comes from manual retouching. This attribute is deprecated.",
+                    "deprecated": true
+                  },
+                  "retouching_accuracy": {
+                    "description": "The retouching accuracy defines the level of detail that we take for retouching",
+                    "$ref": "#/definitions/RetouchingAccuracySchema"
+},
+"custom_json": {
+"type": "string",
+"description": "Provide a custom JSON document, which is stored in our system alongside the image. This is not used to determine any processing steps, it's solely used to exchange additional identifiers between CarCutter and customers for human discussions."
+},
+"background": {
+"type": "bytes",
+"description": "Provide a custom background JPG image with RGB channels."
+},
+"license_plate": {
+"type": "bytes",
+"description": "Provide a custom license plate inlay PNG image with RGBA channels."
+},
+"overlay": {
+"type": "bytes",
+"description": "Provide a custom overlay PNG image with RGBA channels."
+}
+}
+}
+}
+}
+},
+"responses": {
+"200": {
+"description": "Either the image encoded with base64, or for `none`-cuts an empty JSON response. The image format behind base64 is by default JPEG, but can be changed in your customer configuration file. If multiple output images are configured, only the first one is returned.",
+"content": {
+"plain/text": {
+"schema": {
+"type": "string",
+"title": "Base64 Image Representation"
+}
+},
+"application/json": {
+"schema": {
+"type": "object",
+"title": "Empty Response",
+"properties": {}
+}
+}
+}
+},
+"400": {
+"description": "Invalid input",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InputErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/UnauthorizedResponse"
+}
+}
+}
+},
+"402": {
+"description": "Credits exceeded",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/CreditsExceededResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/ForbiddenResponse"
+}
+}
+}
+},
+"500": {
+"description": "Internal server error",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vehicle/image/submission": {
+      "post": {
+        "tags": [
+          "asynchronous"
+        ],
+        "summary": "Submit an image for asynchronous processing",
+        "description": "",
+        "operationId": "asyncSubmit",
+        "consumes": [
+          "application/form-data"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "image_url"
+                ],
+                "properties": {
+                  "image_url": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "collectionFormat": "multi",
+                    "description": "URL to the image that you want to process. You can repeat this parameter up to 60 times to submit multiple images."
+                  },
+                  "cut_type": {
+                    "description": "The cut type to perform on all images in this request. If this parameter is not supplied, the cut type will be read from the user configuration.",
+                    "$ref": "#/definitions/CutTypeSchema"
+},
+"guideline_id": {
+"type": "string",
+"description": "The guideline that you want to select for processing."
+},
+"location_id": {
+"type": "string",
+"description": "The ID of the location (e.g. store) from which this request is sent."
+},
+"processing_speed": {
+"required": false,
+"description": "The processing speed defines how fast the image will be cut and retouched.",
+"type": "string",
+"default": "normal",
+"enum": [
+"normal",
+"lazy"
+]
+},
+"vehicle_id": {
+"type": "string",
+"description": "The ID of the vehicle to which the image belongs (e.g. VIN). It is recommend that you specify this parameter, otherwise all images will be assigned to the same vehicle."
+},
+"webhook_url": {
+"type": "string",
+"description": "If your account has a webhook target enabled, this parameter can be used to define a custom webhook to use with the images submitted in this request."
+},
+"retouching_accuracy": {
+"required": false,
+"description": "The retouching accuracy defines the level of detail that we take for retouching.",
+"type": "string",
+"default": "normal",
+"enum": [
+"normal",
+"precise"
+]
+},
+"custom_json": {
+"type": "string",
+"description": "Provide a custom JSON document, which is stored in our system alongside the image. This is not used to determine any processing steps, it's solely used to exchange additional identifiers between CarCutter and customers for human discussions."
+},
+"license_plate": {
+"type": "bytes",
+"description": "Provide a custom license plate inlay PNG image with RGBA channels."
+},
+"overlay": {
+"type": "bytes",
+"description": "Provide a custom overlay PNG image with RGBA channels."
+},
+"scene_id": {
+"type": "string",
+"description": "Provide a custom scene identification."
+}
+}
+}
+}
+}
+},
+"responses": {
+"200": {
+"description": "Successful operation",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/ImageStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/InputErrorResponse"
+}
+}
+}
+},
+"401": {
+"description": "Unauthorized",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Credits exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/CreditsExceededResponse"
+}
+}
+}
+},
+"500": {
+"description": "Internal server error",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vehicle/image/status": {
+      "get": {
+        "tags": [
+          "asynchronous"
+        ],
+        "summary": "Get current status of images",
+        "description": "",
+        "operationId": "asyncStatus",
+        "parameters": [
+          {
+            "name": "image_url",
+            "in": "query",
+            "description": "URL of the image. May be repeated multiple times to retrieve the status for multiple images.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/ImageStatusResponse"
+}
+}
+}
+},
+"400": {
+"description": "Invalid input",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InputErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vehicle/image/result": {
+      "get": {
+        "tags": [
+          "asynchronous"
+        ],
+        "summary": "Retrieve Cut Result",
+        "description": "",
+        "operationId": "asyncResult",
+        "parameters": [
+          {
+            "name": "image_url",
+            "in": "query",
+            "description": "URL of the image to be retrieved.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cut result. By default this in JPEG format, but this can be changed in your customer configuration file. If you have configured multiple output images for a single input image, only the first one is returned.",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/InputErrorResponse"
+}
+}
+}
+},
+"404": {
+"description": "Image not found",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/ImageNotFoundResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Image expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/ImageExpiredResponse"
+}
+}
+}
+}
+}
+}
+},
+"/vehicle/feature/submission": {
+"post": {
+"tags": [
+"feature"
+],
+"summary": "Submit a feature for a vehicle",
+"description": "",
+"operationId": "featureSubmit",
+"consumes": [
+"application/form-data"
+],
+"produces": [
+"application/json"
+],
+"requestBody": {
+"content": {
+"multipart/form-data": {
+"schema": {
+"type": "object",
+"required": [
+"vehicle_id",
+"title",
+"icon",
+"type"
+],
+"properties": {
+"vehicle_id": {
+"type": "string",
+"description": "ID of the vehicle (usually the vin)."
+},
+"title": {
+"type": "string",
+"description": "The title text of the feature (hover text)."
+},
+"description": {
+"type": "string",
+"description": "Additional information about the feature."
+},
+"icon": {
+"type": "string",
+"description": "The icon that should be displayed in the webplayer."
+},
+"type": {
+"type": "string",
+"description": "This field describes what the type of the feature it is, e.g. text, doc, href, ..."
+},
+"feature_rule_name": {
+"type": "string",
+"description": "Feature rule name that is used for assigning features to hotspots."
+},
+"annotation_id": {
+"type": "string",
+"description": "Public ID of an annotation."
+},
+"detail_image_id": {
+"type": "string",
+"description": "Public ID of an image. This is used for linking the feature to the specified image (click of it opens this detail image)."
+}
+}
+}
+}
+}
+},
+"responses": {
+"200": {
+"description": "Success",
+"content": {
+"application/json": {
+"schema": {
+"title": "Feature ID",
+"type": "object",
+"properties": {
+"feature_id": {
+"type": "string",
+"description": "Public ID of the created feature."
+}
+}
+}
+}
+}
+},
+"400": {
+"description": "Invalid input",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InputErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/UnauthorizedResponse"
+}
+}
+}
+},
+"500": {
+"description": "Internal server error",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vehicle/features": {
+      "get": {
+        "tags": [
+          "feature"
+        ],
+        "summary": "Get all features of a vehicle",
+        "description": "",
+        "operationId": "featuresGet",
+        "consumes": [
+          "application/form-data"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "vehicle_id"
+                ],
+                "properties": {
+                  "vehicle_id": {
+                    "type": "string",
+                    "description": "ID of the vehicle (usually the vin)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Features",
+                  "type": "object",
+                  "properties": {
+                    "features": {
+                      "type": "array",
+                      "items": {
+                        "schema": {
+                          "$ref": "#/definitions/FeatureSchema"
+}
+}
+}
+}
+}
+}
+}
+},
+"400": {
+"description": "Invalid input",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InputErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/UnauthorizedResponse"
+}
+}
+}
+},
+"500": {
+"description": "Internal server error",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vehicle/feature": {
+      "get": {
+        "tags": [
+          "feature"
+        ],
+        "summary": "Get a feature of a vehicle",
+        "description": "",
+        "operationId": "featureGet",
+        "consumes": [
+          "application/form-data"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "feature_id"
+                ],
+                "properties": {
+                  "feature_id": {
+                    "type": "string",
+                    "description": "ID of the feature."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Feature",
+                  "type": "object",
+                  "properties": {
+                    "features": {
+                      "type": "array",
+                      "items": {
+                        "schema": {
+                          "$ref": "#/definitions/FeatureSchema"
+}
+}
+}
+}
+}
+}
+}
+},
+"400": {
+"description": "Invalid input",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InputErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/UnauthorizedResponse"
+}
+}
+}
+},
+"500": {
+"description": "Internal server error",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vehicle/features/delete": {
+      "delete": {
+        "tags": [
+          "feature"
+        ],
+        "summary": "Delete all features of a vehicle",
+        "description": "",
+        "operationId": "featuresDelete",
+        "consumes": [
+          "application/form-data"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "vehicle_id"
+                ],
+                "properties": {
+                  "vehicle_id": {
+                    "type": "string",
+                    "description": "ID of the vehicle (usually the vin)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Deleted Feature IDs",
+                  "type": "object",
+                  "properties": {
+                    "deleted_features": {
+                      "type": "array",
+                      "items": {
+                        "schema": {
+                          "$ref": "#/definitions/FeatureSchema"
+}
+}
+}
+}
+}
+}
+}
+},
+"400": {
+"description": "Invalid input",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InputErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/UnauthorizedResponse"
+}
+}
+}
+},
+"500": {
+"description": "Internal server error",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vehicle/feature/delete": {
+      "delete": {
+        "tags": [
+          "feature"
+        ],
+        "summary": "Delete a feature of a vehicle",
+        "description": "",
+        "operationId": "featureDelete",
+        "consumes": [
+          "application/form-data"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "feature_id"
+                ],
+                "properties": {
+                  "feature_id": {
+                    "type": "string",
+                    "description": "ID of the feature."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Deleted feature ID",
+                  "type": "object",
+                  "properties": {
+                    "deleted_features": {
+                      "type": "array",
+                      "items": {
+                        "schema": {
+                          "$ref": "#/definitions/FeatureSchema"
+}
+}
+}
+}
+}
+}
+}
+},
+"400": {
+"description": "Invalid input",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InputErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/UnauthorizedResponse"
+}
+}
+}
+},
+"500": {
+"description": "Internal server error",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/definitions/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Vehicle": {
+        "type": "object",
+        "properties": {
+          "vehicle_id": {
+            "type": "string"
+          },
+          "app_status": {
+            "type": "string",
+            "example": "new"
+          },
+          "app_status_updated": {
+            "type": "string",
+            "example": "2024/03/01, 09:59:55"
+          },
+          "vehicle_manufacturer": {
+            "type": "string",
+            "example": "Audi"
+          },
+          "vehicle_model": {
+            "type": "string",
+            "example": "A4 B8 2.0 TDI"
+          },
+          "vehicle_model_ext": {
+            "type": "string"
+          },
+          "vehicle_color": {
+            "type": "string",
+            "example": "Moroblau Metallic"
+          },
+          "vehicle_location": {
+            "type": "string"
+          },
+          "vehicle_lot": {
+            "type": "string"
+          },
+          "custom_reference": {
+            "type": "string"
+          },
+          "suggested_guideline_id": {
+            "type": "string",
+            "example": "guideline-2"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "api_key": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "x-navigateMethodsByName": true,
+  "x-sortMethodsBy": [
+    "path",
+    "operation"
+  ],
+  "definitions": {
+    "CreditsExceededResponse": {
+      "title": "Credits Exceeded Response",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "example": 402
+        },
+        "message": {
+          "type": "string",
+          "example": "Credits exceeded. Please contact sales."
+        }
+      }
+    },
+    "CutTypeSchema": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "normal",
+        "blur",
+        "none"
+      ]
+    },
+    "FeatureDetection": {
+      "Submission": {
+        "Request": {
+          "_InnerVehicleSchema": {
+            "title": "Submission Vehicle",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "images": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "match": {
+                      "type": "string",
+                      "enum": [
+                        "url",
+                        "filename"
+                      ]
+                    },
+                    "angle": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "features": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "feature": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "object",
+                      "properties": {
+                        "short": {
+                          "type": "string"
+                        },
+                        "long": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "_SingleVehicleSchema": {
+            "type": "object",
+            "properties": {
+              "vehicle": {
+                "$ref": "#/definitions/FeatureDetection/Submission/Request/\_InnerVehicleSchema"
+}
+}
+},
+"\_ListVehicleSchema": {
+"type": "object",
+"properties": {
+"vehicles": {
+"type": "array",
+"items": {
+"$ref": "#/definitions/FeatureDetection/Submission/Request/_InnerVehicleSchema"
+                }
+              }
+            }
+          },
+          "Body": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/FeatureDetection/Submission/Request/\_SingleVehicleSchema"
+},
+{
+"$ref": "#/definitions/FeatureDetection/Submission/Request/_ListVehicleSchema"
+              }
+            ]
+          }
+        },
+        "Response": {
+          "200": {
+            "_VehicleId": {
+              "type": "object",
+              "properties": {
+                "vehicle_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "_State": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/FeatureDetection/Submission/Response/200/\_VehicleId"
+},
+{
+"type": "object",
+"properties": {
+"state": {
+"type": "string",
+"enum": [
+"enqueued"
+]
+}
+}
+}
+]
+},
+"\_Error": {
+"allOf": [
+{
+"$ref": "#/definitions/FeatureDetection/Submission/Response/200/_VehicleId"
+},
+{
+"type": "object",
+"properties": {
+"error": {
+"$ref": "#/definitions/InputErrorResponse"
+}
+}
+}
+]
+},
+"\_Vehicle": {
+"oneOf": [
+{
+"$ref": "#/definitions/FeatureDetection/Submission/Response/200/_State"
+},
+{
+"$ref": "#/definitions/FeatureDetection/Submission/Response/200/_Error"
+}
+]
+},
+"Body": {
+"typ": "array",
+"items": {
+"$ref": "#/definitions/FeatureDetection/Submission/Response/200/_Vehicle"
+              }
+            }
+          }
+        }
+      }
+    },
+    "FeatureDetectionTooManyVehiclesResponse": {
+      "title": "Error Response",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "example": 413
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "ForbiddenResponse": {
+      "title": "Forbidden Response",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "example": 403
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "ImageNotFoundResponse": {
+      "type": "object",
+      "title": "Image Not Found Response",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "example": 404
+        },
+        "message": {
+          "type": "string",
+          "example": "no such image"
+        }
+      }
+    },
+    "ImageStatusResponse": {
+      "title": "Image Status Response",
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "images": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ImageStatus"
+}
+}
+}
+}
+}
+},
+"InputErrorResponse": {
+"title": "Input Error Response",
+"type": "object",
+"properties": {
+"code": {
+"type": "integer",
+"example": 400
+},
+"message": {
+"type": "string"
+}
+}
+},
+"InternalServerErrorResponse": {
+"title": "Internal Server Error Response",
+"type": "object",
+"properties": {
+"code": {
+"type": "integer",
+"example": 500
+},
+"message": {
+"type": "string"
+}
+}
+},
+"ImageExpiredResponse": {
+"title": "Image Expired Response",
+"type": "object",
+"properties": {
+"code": {
+"type": "integer",
+"example": 410
+},
+"message": {
+"type": "string",
+"example": "file does not exist anymore."
+}
+}
+},
+"ImageStatus": {
+"title": "Image Status",
+"type": "object",
+"properties": {
+"image": {
+"type": "string",
+"description": "URL of the image as provided in the input",
+"example": "http://example.org/CARCUTTER-image-01.jpg"
+},
+"angle": {
+"$ref": "#/definitions/MultiLevelAngle"
+},
+"status": {
+"type": "string",
+"description": "Status of the image. More possible status values might be introduced in the future.",
+"enum": [
+"processing",
+"undefined",
+"raw",
+"final",
+"error",
+"expired",
+"unknown"
+]
+},
+"phase": {
+"type": "string",
+"description": "Phase of the image in the processing pipeline. More possible phases might be introduced in the future.",
+"enum": [
+"unknown",
+"downloading",
+"analyzing",
+"cutting",
+"qa-ing",
+"retouching",
+"ready"
+]
+},
+"quality": {
+"type": "string",
+"description": "Quality of the image as detected by AI or retouching. More possible quality values might be introduced in the future.",
+"enum": [
+"ok",
+"retake",
+null
+]
+}
+}
+},
+"MultiLevelAngle": {
+"type": "array",
+"items": {
+"type": "string"
+},
+"description": "The angle of the picture in a multi-level notation. Currently there are up to two levels. The first level determines the type of view, the second determines the detailed angle. Some angles have only one level.",
+"example": [
+"exterior",
+"side-left"
+]
+},
+"ProcessingSpeedSchema": {
+"type": "string",
+"default": "normal",
+"enum": [
+"normal",
+"lazy"
+]
+},
+"RetouchingAccuracySchema": {
+"type": "string",
+"default": "normal",
+"enum": [
+"normal",
+"precise"
+]
+},
+"UnauthorizedResponse": {
+"title": "Unauthorized Response",
+"type": "object",
+"properties": {
+"code": {
+"type": "integer"
+},
+"message": {
+"type": "string"
+}
+},
+"example": {
+"code": 401,
+"message": "submitted 'Bearer' token is unauthorized"
+}
+}
+}

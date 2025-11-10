@@ -1,0 +1,18 @@
+# Render.com deployment config
+services:
+  - type: web
+    name: image-editor-backend
+    runtime: docker # 👈 Viktigt! Berättar för Render att använda Dockerfile
+    plan: starter
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000" # 👈 matchar EXPOSE 3000 i din Dockerfile
+
+    # Render kommer automatiskt peka hit för health check
+    healthCheckPath: /api/health
+
+    # (valfritt men rekommenderas)
+    autoDeploy: true # 👈 Auto-deploy på nya commits

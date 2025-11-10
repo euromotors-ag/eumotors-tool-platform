@@ -1,0 +1,23 @@
+.data-editor tr > td {
+  text-align: center;
+}
+
+.data-editor tr > td:first-child {
+  text-align: right;
+  padding-right: 1em;
+  font-size: 0.9em;
+}
+
+/* Removing scroll functionality */
+.data-editor {
+  max-height: none;
+  overflow-y: visible;
+  width: 100%;
+}
+
+/* Center the "None" button text */
+button.none {
+  display: block;
+  width: 100%;
+  text-align: center;
+}

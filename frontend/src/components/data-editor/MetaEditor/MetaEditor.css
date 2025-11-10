@@ -1,0 +1,118 @@
+.meta-editor {
+  background-color: rgba(31, 41, 55, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem; /* Slightly increased padding */
+  max-height: none; /* Remove fixed height that might cause scrolling */
+  overflow-y: visible; /* Don't force scrollbar */
+  text-align: left; /* Explicitly set text alignment to left */
+  margin-left: 0; /* Ensure no left margin is pushing content */
+  margin-right: auto; /* Allow right margin to be automatic */
+}
+
+.meta-editor table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-left: 0; /* Ensure table starts from the left */
+}
+
+.meta-editor a {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+  color: #60a5fa; /* Ensure link color matches theme */
+  text-align: left; /* Ensure link text is left-aligned */
+}
+
+/* Links without hover effects */
+
+.meta-editor td {
+  padding: 0.5rem;
+  vertical-align: middle;
+  text-align: left; /* Ensure all cells start with left alignment */
+}
+
+/* Style for label cells (first cell in each row) */
+.meta-editor td:first-child {
+  text-align: left; /* Change from right to left alignment */
+  width: 25%; /* Smaller width for labels */
+  padding-right: 1rem;
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* Style for value cells (second cell in each row) */
+.meta-editor td:nth-child(2) {
+  text-align: left; /* Left-align values */
+  width: 75%;
+}
+
+/* Make the input fields consistent */
+.meta-editor input[type="number"] {
+  transition: all 0.2s ease;
+}
+
+.meta-editor input[type="number"]:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-color: #3b82f6;
+  outline: none;
+}
+
+/* Style for text inputs */
+.meta-editor input[type="text"] {
+  transition: all 0.2s ease;
+}
+
+.meta-editor input[type="text"]:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-color: #3b82f6;
+  outline: none;
+}
+
+/* Hide the input number arrows */
+.meta-editor input[type="number"]::-webkit-inner-spin-button,
+.meta-editor input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.meta-editor input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Row styling for consistency with DataEditor */
+.meta-editor tr {
+  border-bottom: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+/* No hover effects on table rows */
+
+/* Add subtle animation for gradient rows */
+.meta-editor tr.highlight-row {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.05),
+    rgba(139, 92, 246, 0.05),
+    rgba(236, 72, 153, 0.05)
+  );
+  background-size: 200% 100%;
+  animation: gradientShift 8s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}

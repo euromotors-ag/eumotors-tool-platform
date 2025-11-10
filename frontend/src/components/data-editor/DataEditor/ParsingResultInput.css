@@ -1,0 +1,47 @@
+.parsing-result-input {
+  display: flex;
+  flex-direction: row;
+  height: 1.875rem;
+  align-items: center;
+  gap: 0.0625rem;
+  margin: 0.2em 0;
+}
+
+.parsing-result-input > * {
+  flex: 1;
+  padding: 0.2em 2em;
+}
+
+.parsing-result-input > *:nth-child(3) {
+  flex: 0.5;
+}
+
+.parsing-result-input input,
+.parsing-result-input select {
+  width: 100%;
+  color: inherit;
+  background-color: transparent;
+  text-align: left;
+}
+
+/* Force select dropdown to always open downwards */
+.parsing-result-input select {
+  direction: ltr;
+}
+
+/* Ensure dropdown opens downwards on all browsers */
+.parsing-result-input select:focus {
+  direction: ltr;
+}
+
+/* Additional CSS to force dropdown direction */
+.parsing-result-input select option {
+  background-color: #b4ffbe;
+  color: #006400;
+  direction: ltr;
+}
+
+/* Remove the right-aligned text for number inputs */
+.parsing-result-input input[type="number"] {
+  text-align: left;
+}
