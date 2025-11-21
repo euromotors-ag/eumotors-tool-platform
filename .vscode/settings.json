@@ -3,7 +3,6 @@
     "**/node_modules": true,
     "**/dist": true,
     "**/.git": true,
-    // ".vscode": true,
     ".nx": true
   },
   "scm.compactFolders": true

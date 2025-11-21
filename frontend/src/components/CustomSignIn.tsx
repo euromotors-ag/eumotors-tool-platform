@@ -49,7 +49,7 @@ function CustomSignIn() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
@@ -67,22 +67,22 @@ function CustomSignIn() {
               />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-white mb-2">
+          <h2 className="text-3xl font-bold text-foreground mb-2">
             Tools for EuroMotors AG
           </h2>
 
-          <p className="text-sm text-gray-400">Organisation-based access</p>
+          <p className="text-sm text-muted-foreground">Organisation-based access</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-gray-800 rounded-lg shadow-xl border border-gray-700 p-8 relative overflow-hidden">
+        <div className="bg-card rounded-lg shadow-xl border border-border p-8 relative overflow-hidden">
           {/* Subtle gradient accent */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
           <div className="text-center mb-6">
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <h3 className="text-xl font-semibold text-foreground mb-2">
               Welcome back
             </h3>
-            <p className="text-gray-300 text-sm">
+            <p className="text-muted-foreground text-sm">
               Log In with your Google account to access the internal platform
             </p>
           </div>
@@ -91,7 +91,7 @@ function CustomSignIn() {
           <button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="w-full cursor-pointer flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg shadow-lg bg-gray-700 text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 group relative overflow-hidden">
+            className="w-full cursor-pointer flex items-center justify-center px-4 py-3 border border-border rounded-lg shadow-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 group relative overflow-hidden">
             {/* Gradient hover effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             {isLoading ? (
@@ -128,10 +128,10 @@ function CustomSignIn() {
 
           {/* Security Info */}
           <div className="mt-6 text-center">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground">
               Secure login with organisation authentication
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground/80 mt-1">
               Only users from EuroMotors AG can access this platform
             </p>
           </div>
@@ -139,7 +139,7 @@ function CustomSignIn() {
 
         {/* Footer */}
         <div className="text-center">
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted-foreground">
             EuroMotors AG @ {new Date().getFullYear()}
           </p>
         </div>

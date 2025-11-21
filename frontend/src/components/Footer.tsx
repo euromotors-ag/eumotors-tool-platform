@@ -2,15 +2,15 @@ function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gradient-to-r from-gray-900 to-gray-800 text-gray-300">
+    <footer className="bg-background text-foreground border-t border-border">
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="border-t border-gray-700 pt-8 md:flex md:items-center md:justify-between">
+        <div className="border-t border-border pt-8 md:flex md:items-center md:justify-between">
           {/* Social icons */}
           <div className="flex justify-center md:justify-start space-x-6 md:order-2 w-full md:w-auto">
             <a
               href="https://github.com/TheProfitMind"
               target="_blank"
-              className="text-gray-400 hover:text-white transition-colors">
+              className="text-muted-foreground hover:text-foreground transition-colors">
               <span className="sr-only">GitHub</span>
               <svg
                 className="h-6 w-6"
@@ -28,7 +28,7 @@ function Footer() {
             <a
               href="https://discord.gg/DFBtgj4AFq"
               target="_blank"
-              className="text-gray-400 hover:text-white transition-colors">
+              className="text-muted-foreground hover:text-foreground transition-colors">
               <span className="sr-only">Discord</span>
               <svg
                 className="h-6 w-6"
@@ -41,7 +41,7 @@ function Footer() {
           </div>
 
           <div className="mt-8 md:mt-0 md:order-1">
-            <p className="text-center text-base text-gray-400">
+            <p className="text-center text-base text-muted-foreground">
               &copy; {currentYear} All rights reserved. Internal tools for
               EuroMotors AG.
             </p>
@@ -50,7 +50,7 @@ function Footer() {
 
         <div className="mt-8 grid grid-cols-2 gap-8 md:grid-cols-4">
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-white tracking-wider uppercase">
+            <h3 className="text-sm font-semibold text-foreground tracking-wider uppercase">
               Tools
             </h3>
             <ul className="mt-4 space-y-2">
@@ -86,7 +86,7 @@ function Footer() {
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-white tracking-wider uppercase">
+            <h3 className="text-sm font-semibold text-foreground tracking-wider uppercase">
               Company
             </h3>
             <ul className="mt-4 space-y-2">

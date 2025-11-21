@@ -1,25 +1,60 @@
-import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useUser, useClerk } from "@clerk/clerk-react";
+import {
+  ImageIcon,
+  FileTextIcon,
+  GlobeIcon,
+  MenuIcon,
+  ExternalLinkIcon,
+  UserIcon,
+  LogOutIcon,
+} from "lucide-react";
 
-function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/utils/cn";
+
+interface MenuItem {
+  title: string;
+  url: string;
+  description?: string;
+  icon?: React.ReactNode;
+  external?: boolean;
+  items?: MenuItem[];
+}
+
+const Navbar = () => {
   const { user } = useUser();
   const { signOut } = useClerk();
-  const profileRef = useRef<HTMLDivElement>(null);
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  const toggleProfile = () => {
-    setIsProfileOpen(!isProfileOpen);
-  };
-
-  const handleSignOut = () => {
-    signOut();
-  };
 
   const getUserInitial = () => {
     if (user?.firstName) {
@@ -41,210 +76,325 @@ function Navbar() {
     return user?.emailAddresses[0]?.emailAddress || "User";
   };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        profileRef.current &&
-        !profileRef.current.contains(event.target as Node)
-      ) {
-        setIsProfileOpen(false);
-      }
-    }
+  const handleSignOut = () => {
+    signOut();
+  };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  const menu: MenuItem[] = [
+    {
+      title: "Start",
+      url: "/",
+    },
+    {
+      title: "Editors",
+      url: "#",
+      items: [
+        {
+          title: "Image Editor",
+          description: "Redigera och bearbeta bilder med CarCutter",
+          icon: <ImageIcon className="size-5 shrink-0" />,
+          url: "/image-editor",
+        },
+        {
+          title: "Data Editor",
+          description: "Redigera och hantera bilddata och metadata",
+          icon: <FileTextIcon className="size-5 shrink-0" />,
+          url: "/data-editor",
+        },
+        {
+          title: "Scrape Editor",
+          description: "Skrapa och ladda ner bilder från webben",
+          icon: <GlobeIcon className="size-5 shrink-0" />,
+          url: "/scrape-editor",
+        },
+      ],
+    },
+    {
+      title: "External Tools",
+      url: "#",
+      items: [
+        {
+          title: "AutoScout Tool",
+          description: "Generera länkar för AutoScout24",
+          icon: <ExternalLinkIcon className="size-5 shrink-0" />,
+          url: "https://auto-scout-linker-bilalovai.replit.app/cars",
+          external: true,
+        },
+      ],
+    },
+  ];
+
+  const logo = {
+    url: "/",
+    src: "/company_logo.svg",
+    alt: "EuroMotors AG Logo",
+    title: "EuroMotors AG",
+  };
 
   return (
-    <nav className="bg-gray-800 text-white shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo and site name */}
-          <div className="flex items-center">
-            <Link to="/" className="flex-shrink-0 flex items-center">
+    <section className="border-b border-border bg-background">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Desktop Menu */}
+        <nav className="hidden items-center justify-between py-4 lg:flex">
+          <div className="flex items-center gap-6">
+            {/* Logo */}
+            <Link to={logo.url} className="flex items-center gap-2">
               <img
-                className="h-8 w-8 mr-2"
-                src="/company_logo.svg"
-                alt="Logo"
+                src={logo.src}
+                className="max-h-8 dark:invert"
+                alt={logo.alt}
               />
-              <span className="font-bold text-xl"> EuroMotors AG</span>
+              <span className="text-lg font-semibold tracking-tighter">
+                {logo.title}
+              </span>
             </Link>
-          </div>
 
-          {/* Desktop navigation */}
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-center space-x-4">
-              <Link
-                to="/"
-                className="px-3 py-2 rounded-md hover:bg-gray-700 transition-colors">
-                Start
-              </Link>
-              <Link
-                to="/image-editor"
-                className="px-3 py-2 rounded-md hover:bg-gray-700 transition-colors">
-                Image Editor
-              </Link>
-              <Link
-                to="/data-editor"
-                className="px-3 py-2 rounded-md hover:bg-gray-700 transition-colors">
-                Data Editor
-              </Link>
-              <Link
-                to="/scrape-editor"
-                className="px-3 py-2 rounded-md hover:bg-gray-700 transition-colors">
-                Scraping Images
-              </Link>
-              <Link
-                to="https://auto-scout-linker-bilalovai.replit.app/cars"
-                target="_blank"
-                className="px-3 py-2 rounded-md hover:bg-gray-700 transition-colors">
-                AutoScout Tool
-              </Link>
-
-              {/* User profile dropdown */}
-              <div className="relative" ref={profileRef}>
-                <button
-                  onClick={toggleProfile}
-                  className="flex items-center cursor-pointer space-x-2 p-2 rounded-full hover:bg-gray-700 transition-colors">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    {getUserInitial()}
-                  </div>
-                  <span className="text-sm text-gray-300 hidden md:block">
-                    {getUserName()}
-                  </span>
-                  <svg
-                    className={`w-4 h-4 text-gray-400 transition-transform ${
-                      isProfileOpen ? "rotate-180" : ""
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-
-                {/* Dropdown menu */}
-                {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-1 z-50">
-                    <div className="px-4 py-2 border-b border-gray-700">
-                      <p className="text-sm font-medium text-white">
-                        {getUserName()}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {user?.emailAddresses[0]?.emailAddress}
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleSignOut}
-                      className="w-full cursor-pointer text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors">
-                      Sign Out
-                    </button>
-                  </div>
-                )}
-              </div>
+            <div className="flex items-center">
+              <NavigationMenu>
+                <NavigationMenuList>
+                  {menu.map((item) => renderMenuItem(item))}
+                </NavigationMenuList>
+              </NavigationMenu>
             </div>
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <button
-              onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md hover:bg-gray-700 focus:outline-none"
-              aria-expanded="false">
-              <span className="sr-only">Open main menu</span>
-              {/* Hamburger icon */}
-              <svg
-                className={`${isMenuOpen ? "hidden" : "block"} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-              {/* Close icon */}
-              <svg
-                className={`${isMenuOpen ? "block" : "hidden"} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+          {/* User Profile Dropdown */}
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar>
+                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                      {getUserInitial()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {getUserName()}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.emailAddresses[0]?.emailAddress}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="flex items-center">
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleSignOut}
+                  className="cursor-pointer text-destructive focus:text-destructive">
+                  <LogOutIcon className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </nav>
+
+        {/* Mobile Menu */}
+        <div className="block lg:hidden">
+          <div className="flex items-center justify-between py-4">
+            {/* Logo */}
+            <Link to={logo.url} className="flex items-center gap-2">
+              <img
+                src={logo.src}
+                className="max-h-8 dark:invert"
+                alt={logo.alt}
+              />
+            </Link>
+
+            <div className="flex items-center gap-2">
+              {/* User Profile for Mobile */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar>
+                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                        {getUserInitial()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {getUserName()}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user?.emailAddresses[0]?.emailAddress}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex items-center">
+                      <UserIcon className="mr-2 h-4 w-4" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    className="cursor-pointer text-destructive focus:text-destructive">
+                    <LogOutIcon className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Mobile Menu Sheet */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <MenuIcon className="h-4 w-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle>
+                      <Link to={logo.url} className="flex items-center gap-2">
+                        <img
+                          src={logo.src}
+                          className="max-h-8 dark:invert"
+                          alt={logo.alt}
+                        />
+                        <span className="text-lg font-semibold">
+                          {logo.title}
+                        </span>
+                      </Link>
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="flex flex-col gap-6 p-4">
+                    <Accordion
+                      type="single"
+                      collapsible
+                      className="flex w-full flex-col gap-4">
+                      {menu.map((item) => renderMobileMenuItem(item))}
+                    </Accordion>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Mobile menu, show/hide based on menu state */}
-      <div className={`${isMenuOpen ? "block" : "hidden"} md:hidden`}>
-        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 flex flex-col">
-          <Link
-            to="/"
-            className="block px-3 py-2 rounded-md hover:bg-gray-700 transition-colors"
-            onClick={() => setIsMenuOpen(false)}>
-            Start
-          </Link>
-          <Link
-            to="/licenses"
-            className="block px-3 py-2 rounded-md hover:bg-gray-700 transition-colors"
-            onClick={() => setIsMenuOpen(false)}>
-            Licenses
-          </Link>
-          <Link
-            to="/image-editor"
-            className="block px-3 py-2 rounded-md hover:bg-gray-700 transition-colors"
-            onClick={() => setIsMenuOpen(false)}>
-            Image Editor
-          </Link>
-          <Link
-            to="/data-editor"
-            className="block px-3 py-2 rounded-md hover:bg-gray-700 transition-colors"
-            onClick={() => setIsMenuOpen(false)}>
-            Data Editor
-          </Link>
-          <Link
-            to="/data-editor"
-            className="block px-3 py-2 rounded-md hover:bg-gray-700 transition-colors"
-            onClick={() => setIsMenuOpen(false)}>
-            Scrape Editor
-          </Link>
-          <Link
-            to="https://auto-scout-linker-bilalovai.replit.app/cars"
-            target="_blank"
-            className="block px-3 py-2 rounded-md hover:bg-gray-700 transition-colors"
-            onClick={() => setIsMenuOpen(false)}>
-            AutoScout Generator
-          </Link>
-          <Link
-            to="/templates"
-            className="block px-3 py-2 rounded-md hover:bg-gray-700 transition-colors"
-            onClick={() => setIsMenuOpen(false)}>
-            Templates
-          </Link>
-        </div>
-      </div>
-    </nav>
+    </section>
   );
-}
+};
+
+const renderMenuItem = (item: MenuItem) => {
+  if (item.items) {
+    return (
+      <NavigationMenuItem key={item.title}>
+        <NavigationMenuTrigger>{item.title}</NavigationMenuTrigger>
+        <NavigationMenuContent className="bg-popover text-popover-foreground">
+          {item.items.map((subItem) => (
+            <NavigationMenuLink asChild key={subItem.title} className="w-80">
+              <SubMenuLink item={subItem} />
+            </NavigationMenuLink>
+          ))}
+        </NavigationMenuContent>
+      </NavigationMenuItem>
+    );
+  }
+
+  return (
+    <NavigationMenuItem key={item.title}>
+      <NavigationMenuLink asChild>
+        <Link
+          to={item.url}
+          className={cn(
+            "group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50"
+          )}>
+          {item.title}
+        </Link>
+      </NavigationMenuLink>
+    </NavigationMenuItem>
+  );
+};
+
+const renderMobileMenuItem = (item: MenuItem) => {
+  if (item.items) {
+    return (
+      <AccordionItem key={item.title} value={item.title} className="border-b-0">
+        <AccordionTrigger className="py-0 text-md font-semibold hover:no-underline">
+          {item.title}
+        </AccordionTrigger>
+        <AccordionContent className="mt-2">
+          <div className="flex flex-col gap-2">
+            {item.items.map((subItem) => (
+              <SubMenuLink key={subItem.title} item={subItem} mobile />
+            ))}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    );
+  }
+
+  return (
+    <Link
+      key={item.title}
+      to={item.url}
+      className="text-md font-semibold hover:text-primary transition-colors">
+      {item.title}
+    </Link>
+  );
+};
+
+const SubMenuLink = ({
+  item,
+  mobile = false,
+}: {
+  item: MenuItem;
+  mobile?: boolean;
+}) => {
+  const content = (
+    <div
+      className={cn(
+        "flex min-w-80 select-none flex-row gap-4 rounded-md p-3 leading-none no-underline outline-none transition-colors",
+        mobile
+          ? "hover:bg-accent hover:text-accent-foreground"
+          : "hover:bg-accent hover:text-accent-foreground"
+      )}>
+      <div className="text-foreground">{item.icon}</div>
+      <div>
+        <div className="text-sm font-semibold">{item.title}</div>
+        {item.description && (
+          <p className="text-muted-foreground text-sm leading-snug">
+            {item.description}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
+  if (item.external) {
+    return (
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn(mobile && "block")}>
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link to={item.url} className={cn(mobile && "block")}>
+      {content}
+    </Link>
+  );
+};
 
 export default Navbar;

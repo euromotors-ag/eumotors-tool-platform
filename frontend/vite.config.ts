@@ -15,6 +15,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      "@": resolve(__dirname, "./src"),
       "@tpm-dev2/result": resolve(__dirname, "src/libs/result/index.mjs"),
       "@tpm-dev2/catalog": resolve(__dirname, "src/libs/catalog/index.mjs"),
     },

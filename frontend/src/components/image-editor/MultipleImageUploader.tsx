@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Button } from "../ui/Button";
-import "../../assets/css/uploader.css";
+import { Button } from "@/components/ui/button";
+import "../../styles/uploader.css";
 import UrlImageScraper from "./UrlImageScraper";
 import {
   FileSystemDirectoryHandle,

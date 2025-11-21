@@ -1,37 +1,37 @@
 # EuroMotors Internal Platform
 
-En omfattande intern plattform för EuroMotors som centraliserar och automatiserar viktiga affärsprocesser genom integrerade verktyg och tjänster.
+A comprehensive internal platform for EuroMotors that centralizes and automates key business processes through integrated tools and services.
 
-## 🚀 Översikt
+## 🚀 Overview
 
-EuroMotors Internal Platform är en modern webbapplikation byggd med React och TypeScript som fungerar som den digitala ryggraden för EuroMotors interna operationer. Plattformen erbjuder säker åtkomst till olika tredjepartstjänster och interna verktyg för att effektivisera arbetsflöden och förbättra produktiviteten.
+EuroMotors Internal Platform is a modern web application built with React and TypeScript, serving as the digital backbone of EuroMotors’ internal operations. The platform provides secure access to various third-party services and internal tools, streamlining workflows and improving productivity.
 
-## 🏗️ Arkitektur
+## 🏗️ Architecture
 
 ### Frontend Stack
 
-- **React 19** med TypeScript för typ-säker utveckling
-- **Vite 6** för snabb utveckling och optimerad byggprocess
-- **Tailwind CSS 4** för modern, responsiv UI-design
-- **React Router 7** för navigation och routing
-- **Clerk** för autentisering och användarhantering
+- **React 19** with TypeScript for type-safe development
+- **Vite 6** for fast development and optimized build process
+- **Tailwind CSS 4** for modern, responsive UI design
+- **React Router 7** for navigation and routing
+- **Clerk** for authentication and user management
 
 ### Backend Stack
 
-- **Node.js** med Express.js för RESTful API
-- **TypeScript** för typ-säkerhet och bättre utvecklarupplevelse
-- **AWS S3** för molnlagring av bilder och filer
-- **Playwright** för web scraping och automatisering
-- **Multer** för filuppladdning och hantering
+- **Node.js** with Express.js for RESTful API
+- **TypeScript** for type safety and a better developer experience
+- **AWS S3** for cloud storage of images and files
+- **Playwright** for web scraping and automation
+- **Multer** for file uploads and management
 
-### Tredjepartstjänster
+### Third-party Services
 
-- **CarCutter API** - AI-driven bildbehandling för fordonsbilder
-- **AWS S3** - Molnlagring för processade bilder
-- **Scrape.do** - Web scraping med proxy-stöd
-- **Blocket.se** - Automatiserad dataextraktion från bilannonser
+- **CarCutter API** - AI-powered image processing for vehicle photos
+- **AWS S3** - Cloud storage for processed images
+- **Scrape.do** - Web scraping with proxy support
+- **Blocket.se** - Automated data extraction from car listings
 
-## 📁 Projektstruktur
+## 📁 Project Structure
 
 ```
 Internal Platform/
@@ -40,95 +40,95 @@ Internal Platform/
 │   ├── services/              # Business logic services
 │   ├── routes/                # API routes
 │   ├── middlewares/           # Express middlewares
-│   ├── config/                # Konfigurationsfiler
+│   ├── config/                # Configuration files
 │   ├── types/                 # TypeScript type definitions
-│   └── utils/                 # Hjälpfunktioner
-├── frontend/                  # React frontend applikation
+│   └── utils/                 # Helper functions
+├── frontend/                  # React frontend application
 │   ├── src/
-│   │   ├── components/        # Återanvändbara UI-komponenter
-│   │   │   ├── image-editor/  # Bildbehandlingsgränssnitt
-│   │   │   ├── data-editor/   # Datahanteringsverktyg
-│   │   │   ├── scrape-editor/ # Web scraping verktyg
-│   │   │   └── ui/           # Grundläggande UI-komponenter
-│   │   ├── pages/            # Huvudsidor
-│   │   ├── hooks/            # Anpassade React hooks
+│   │   ├── components/        # Reusable UI components
+│   │   │   ├── image-editor/  # Image processing interface
+│   │   │   ├── data-editor/   # Data management tools
+│   │   │   ├── scrape-editor/ # Web scraping tools
+│   │   │   └── ui/           # Basic UI components
+│   │   ├── pages/            # Main pages
+│   │   ├── hooks/            # Custom React hooks
 │   │   ├── contexts/         # React contexts
-│   │   ├── libs/             # Externa bibliotek
-│   │   └── utils/            # Hjälpfunktioner
-│   └── public/               # Statiska filer
-└── docker-compose.yml        # Docker konfiguration
+│   │   ├── libs/             # External libraries
+│   │   └── utils/            # Utilities
+│   └── public/               # Static files
+└── docker-compose.yml        # Docker configuration
 ```
 
-## 🛠️ Huvudfunktioner
+## 🛠️ Key Features
 
-### 1. **Bildbehandling (Image Editor)**
+### 1. **Image Processing (Image Editor)**
 
-- **AI-driven bakgrundsborttagning** via CarCutter API
-- **Batch-bearbetning** av flera bilder samtidigt
-- **Stöd för flera bildformat** (JPG, PNG, WebP)
-- **Molnlagring** med AWS S3 integration
-- **Automatisk licensplatta-överlagring** för EuroMotors och CarTrade24
-- **Anpassningsbara scener** och overlay-bilder
+- **AI-based background removal** via CarCutter API
+- **Batch processing** of multiple images simultaneously
+- **Support for multiple image formats** (JPG, PNG, WebP)
+- **Cloud storage** with AWS S3 integration
+- **Automatic license plate overlays** for EuroMotors and CarTrade24
+- **Customizable scenes** and overlay images
 
-### 2. **Datahantering (Data Editor)**
+### 2. **Data Management (Data Editor)**
 
-- **Excel-filbehandling** med XLSX-biblioteket
-- **Datavalidering** och transformation med Zod
-- **Exportfunktioner** för processade data
-- **Mallbaserad datainmatning**
-- **Strukturerad datahantering** för fordonskataloger
+- **Excel file processing** with XLSX library
+- **Data validation** and transformation using Zod
+- **Export functions** for processed data
+- **Template-based data entry**
+- **Structured data management** for vehicle catalogs
 
 ### 3. **Web Scraping (Scrape Editor)**
 
-- **Blocket.se integration** för automatisk bilannons-extraktion
-- **Playwright-baserad scraping** med headless browser
-- **Proxy-stöd** för att undvika detektering
-- **Bildnedladdning** och automatisk bearbetning
-- **Konfigurerbara scraping-parametrar**
+- **Blocket.se integration** for automatic car listing extraction
+- **Playwright-based scraping** with headless browser
+- **Proxy support** to avoid detection
+- **Image downloading** and automatic processing
+- **Configurable scraping parameters**
 
-### 4. **Säkerhetsfunktioner**
+### 4. **Security Features**
 
-- **Clerk-autentisering** med Google OAuth
-- **Skyddad API-åtkomst** med middleware
-- **Miljövariabel-hantering** för känsliga data
-- **Input-validering** och sanitering
-- **CORS-konfiguration** för säker kommunikation
+- **Clerk authentication** with Google OAuth
+- **Protected API access** with middleware
+- **Environment variable management** for sensitive data
+- **Input validation** and sanitization
+- **CORS configuration** for secure communication
 
-## 🔐 Säkerhet och Autentisering
+## 🔐 Security and Authentication
 
-### Autentiseringssystem
+### Authentication System
 
-- **Clerk** med Google OAuth integration
-- **Skyddade routes** med `ProtectedRoute` komponent
-- **Automatisk omdirigering** för oautentiserade användare
-- **SSO-callback** hantering
+- **Clerk** with Google OAuth integration
+- **Protected routes** with `ProtectedRoute` component
+- **Automatic redirection** for unauthenticated users
+- **SSO callback** handling
 
-### API-säkerhet
+### API Security
 
-- **Helmet** för säkerhetsheaders
-- **CORS-konfiguration** med specifika ursprung
-- **Input-validering** med express-validator
-- **Rate limiting** och timeout-hantering
+- **Helmet** for security headers
+- **CORS configuration** with specified origins
+- **Input validation** with express-validator
+- **Rate limiting** and timeout handling
 
-## 🚀 Komma igång
+## 🚀 Getting Started
 
-### Förutsättningar
+### Prerequisites
 
 - Node.js 18+
-- npm eller yarn
-- Docker (valfritt för containerisering)
-- Åtkomst till EuroMotors interna nätverk
+- npm or yarn
+- Docker (optional for containerization)
+- Access to EuroMotors' internal network
 
 ### Installation
 
-1. **Klona repository**
+1. **Clone the repository**
 
    ```bash
    git clone [repository-url]
    cd internal-platform
    ```
 
-2. **Installera dependencies**
+2. **Install dependencies**
 
    ```bash
    # Frontend
@@ -140,22 +140,22 @@ Internal Platform/
    npm install
    ```
 
-3. **Miljövariabler**
+3. **Environment variables**
 
    ```bash
-   # Skapa .env filer i både frontend/ och backend/
-   # Se .env.example för exempel på nödvändiga variabler
+   # Create .env files in both frontend/ and backend/
+   # See .env.example for required variables
    ```
 
-4. **Starta utvecklingsmiljö**
+4. **Start development environment**
 
-   **Med Docker (rekommenderat):**
+   **Using Docker (recommended):**
 
    ```bash
    docker-compose up --build
    ```
 
-   **Manuellt:**
+   **Manually:**
 
    ```bash
    # Terminal 1 - Backend
@@ -167,178 +167,165 @@ Internal Platform/
    npm run dev
    ```
 
-### Åtkomst
+### Access
 
 - **Frontend:** http://localhost:5173
 - **Backend API:** http://localhost:3000
 - **Health Check:** http://localhost:3000/api/health
 
-## 📊 API Endpoints
-
-### Bildbehandling
-
-- `POST /api/v1/images/process` - Bearbeta bilder med CarCutter
-- `GET /api/v1/images/status` - Kontrollera bearbetningsstatus
-- `POST /api/v1/images/upload` - Ladda upp bilder till S3
-
-### Web Scraping
-
-- `POST /api/v1/scrape/blocket` - Scrapa Blocket-annonser
-- `POST /api/v1/scrape/images` - Ladda ner bilder från URL:er
-
-## 🎨 UI/UX Funktioner
+## 🎨 UI/UX Features
 
 ### Design System
 
-- **Mörkt tema** för professionell arbetsmiljö
-- **Responsiv design** som fungerar på desktop och mobil
-- **Modern komponentarkitektur** med återanvändbara element
-- **Tillgänglighet** enligt WCAG-riktlinjer
+- **Dark theme** for a professional work environment
+- **Responsive design** that works on desktop and mobile
+- **Modern component architecture** with reusable elements
+- **Accessibility** following WCAG guidelines
 
-### Användarupplevelse
+### User Experience
 
-- **Laddningsindikatorer** för smidig användarupplevelse
-- **Felhantering** med tydliga meddelanden
-- **Debug-terminal** för utvecklare
-- **Toast-notifikationer** för feedback
+- **Loading indicators** for smooth user experience
+- **Error handling** with clear messages
+- **Debug terminal** for developers
+- **Toast notifications** for feedback
 
-## 🔧 Utveckling
+## 🔧 Development
 
-### Kodstandarder
+### Code Standards
 
-- **TypeScript** för typ-säkerhet
-- **ESLint** för kodkvalitet
-- **Prettier** för kodformatering
+- **TypeScript** for type safety
+- **ESLint** for code quality
+- **Prettier** for code formatting
 - **Functional programming** patterns
-- **DRY och SOLID** principer
+- **DRY and SOLID** principles
 
-### Byggprocess
+### Build Process
 
 ```bash
 # Frontend
-npm run build    # Produktionsbyggnad
-npm run preview  # Förhandsvisning av byggnad
-npm run lint     # Kodanalys
+npm run build    # Production build
+npm run preview  # Preview the build
+npm run lint     # Linting
 
 # Backend
-npm run build    # TypeScript kompilering
-npm run dev      # Utvecklingsläge med hot reload
+npm run build    # TypeScript compilation
+npm run dev      # Development mode with hot reload
 ```
 
 ### Docker Support
 
-- **Multi-stage builds** för optimerade images
-- **Development containers** med hot reload
-- **Production-ready** konfiguration
+- **Multi-stage builds** for optimized images
+- **Development containers** with hot reload
+- **Production-ready** configuration
 
-## 📈 Prestanda och Optimering
+## 📈 Performance and Optimization
 
-### Frontend Optimering
+### Frontend Optimization
 
-- **Code splitting** med dynamiska imports
-- **Tree shaking** för mindre bundle-storlek
-- **Vite** för snabb utveckling och byggnad
-- **React.memo** för komponentoptimering
+- **Code splitting** with dynamic imports
+- **Tree shaking** for smaller bundle size
+- **Vite** for fast development and build
+- **React.memo** for component optimization
 
-### Backend Optimering
+### Backend Optimization
 
-- **Asynkron bearbetning** för tunga operationer
-- **Connection pooling** för databasanslutningar
-- **Caching** av API-svar
-- **Streaming** för stora filer
+- **Asynchronous processing** for heavy operations
+- **Connection pooling** for database connections
+- **Caching** of API responses
+- **Streaming** for large files
 
-## 🧪 Testning och Kvalitetssäkring
+## 🧪 Testing and Quality Assurance
 
-### Kodkvalitet
+### Code Quality
 
-- **TypeScript** för kompileringstidskontroll
-- **ESLint** för kodstandarder
-- **Prettier** för konsistent formatering
-- **Manual testing** med debug-terminal
+- **TypeScript** for compile-time checks
+- **ESLint** for code standards
+- **Prettier** for consistent formatting
+- **Manual testing** with debug terminal
 
-### Säkerhetstestning
+### Security Testing
 
-- **Input validation** på alla endpoints
-- **CORS-konfiguration** för säker kommunikation
+- **Input validation** on all endpoints
+- **CORS configuration** for secure communication
 - **Environment variable validation**
-- **Error handling** för robusta applikationer
+- **Error handling** for robust applications
 
-## 📚 Dokumentation och Support
+## 📚 Documentation and Support
 
-### API Dokumentation
+### API Documentation
 
-- **Swagger/OpenAPI** integration (planerad)
-- **Inline kommentarer** för komplex logik
-- **Type definitions** för alla interfaces
+- **Swagger/OpenAPI** integration (planned)
+- **Inline comments** for complex logic
+- **Type definitions** for all interfaces
 
-### Felsökning
+### Troubleshooting
 
-- **Debug terminal** i frontend
-- **Console logging** med strukturerad output
-- **Error boundaries** för React-komponenter
+- **Debug terminal** in frontend
+- **Console logging** with structured output
+- **Error boundaries** for React components
 
-## 🔄 Deployment och CI/CD
+## 🔄 Deployment and CI/CD
 
-### Miljöer
+### Environments
 
-- **Development** - Lokal utveckling
-- **Staging** - Testmiljö (planerad)
-- **Production** - Live-miljö
+- **Development** - Local development
+- **Staging** - Test environment (planned)
+- **Production** - Live environment
 
 ### Deployment
 
-- **Docker containers** för konsistent miljö
-- **Environment variables** för konfiguration
-- **Health checks** för övervakning
+- **Docker containers** for a consistent environment
+- **Environment variables** for configuration
+- **Health checks** for monitoring
 
-## 📋 Roadmap och Framtida Funktioner
+## 📋 Roadmap and Future Features
 
-### Planerade Förbättringar
+### Planned Improvements
 
-- [ ] **Apify integration** för avancerad web scraping
-- [ ] **Bulk operations** för stora datamängder
-- [ ] **API rate limiting** och caching
-- [ ] **Real-time notifications** med WebSockets
-- [ ] **Advanced image processing** med fler AI-tjänster
-- [ ] **Data export** i flera format (CSV, JSON, XML)
-- [ ] **User management** och rollbaserad åtkomst
-- [ ] **Audit logging** för säkerhetsspårning
+- [ ] **Apify integration** for advanced web scraping
+- [ ] **Bulk operations** for large datasets
+- [ ] **API rate limiting** and caching
+- [ ] **Real-time notifications** with WebSockets
+- [ ] **Advanced image processing** with more AI services
+- [ ] **Data export** in multiple formats (CSV, JSON, XML)
+- [ ] **User management** and role-based access
+- [ ] **Audit logging** for security tracking
 
-### Tekniska Förbättringar
+### Technical Enhancements
 
-- [ ] **Unit testing** med Jest/Vitest
-- [ ] **E2E testing** med Playwright
-- [ ] **Performance monitoring** med APM
-- [ ] **Database integration** för persistent lagring
-- [ ] **Microservices architecture** för skalbarhet
+- [ ] **Unit testing** with Jest/Vitest
+- [ ] **E2E testing** with Playwright
+- [ ] **Performance monitoring** with APM
+- [ ] **Database integration** for persistent storage
+- [ ] **Microservices architecture** for scalability
 
-## 🤝 Bidrag och Utveckling
+## 🤝 Contribution and Development
 
-### Utvecklingsprocess
+### Development Process
 
-1. **Fork** repository
-2. **Skapa feature branch** från main
-3. **Implementera ändringar** med tydliga commits
-4. **Testa lokalt** innan push
-5. **Skapa Pull Request** med beskrivning
+1. **Fork** the repository
+2. **Create a feature branch** from main
+3. **Implement changes** with clear commits
+4. **Test changes locally** before pushing
+5. **Create a Pull Request** with a description
 
-### Kodstandarder
+### Coding Standards
 
-- Följ befintliga TypeScript/React patterns
-- Använd semantiska commit-meddelanden
-- Inkludera dokumentation för nya funktioner
-- Testa ändringar lokalt innan submission
+- Follow existing TypeScript/React patterns
+- Use semantic commit messages
+- Include documentation for new features
+- Test changes locally before submission
 
-## 📞 Support och Kontakt
+## 📞 Support and Contact
 
-För tekniska frågor eller support, kontakta utvecklingsteamet via:
+For technical questions or support, contact the development team via:
 
 - **Internal Slack** - #internal-platform
-- **Email** - dev-team@eumotors.com
-- **GitHub Issues** - För buggrapporter och feature requests
+- **Email** - support@eumotors.com
+- **GitHub Issues** - For bug reports and feature requests
 
 ---
 
 **Version:** 1.0.0  
-**Senast uppdaterad:** 2024  
-**Licens:** Proprietary - EuroMotors AG
+**Last updated:** 2024  
+**License:** EuroMotors AG

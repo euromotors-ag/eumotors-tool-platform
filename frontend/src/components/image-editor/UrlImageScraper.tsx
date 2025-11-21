@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "../ui/Button";
+import { Button } from "@/components/ui/button";
 import LoadSpinner from "../ui/LoadSpinner";
 import { scrapeUrl } from "../../api/scrape-api";
 import { API_ENDPOINTS } from "../../api/api-endpoints";

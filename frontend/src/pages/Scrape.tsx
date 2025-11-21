@@ -2,6 +2,7 @@ import { useState } from "react";
 import ScrapeForm from "../components/scrape-editor/ScrapeForm";
 import ScrapedDataDisplay from "../components/scrape-editor/ScrapedDataDisplay";
 import { type ScrapeResponse } from "../api/scrape-api";
+import PageContainer from "@/components/PageContainer";
 
 function Scrape() {
   const [scrapedData, setScrapedData] = useState<ScrapeResponse | null>(null);
@@ -11,11 +12,11 @@ function Scrape() {
   };
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen py-8">
-      <div className="container mx-auto px-6">
+    <div className="bg-background text-foreground min-h-screen py-8">
+      <PageContainer>
         <h1 className="text-3xl font-bold mb-6">Scraping Images</h1>
 
-        <div className="mb-6 flex border-b border-gray-700">
+        <div className="mb-6 flex border-b border-border">
           <p className="px-4 py-2 font-medium focus:outline-none text-blue-500 border-b-2 border-blue-5000">
             Single URL Scraping
           </p>
@@ -28,7 +29,7 @@ function Scrape() {
 
           <div>{scrapedData && <ScrapedDataDisplay data={scrapedData} />}</div>
         </div>
-      </div>
+      </PageContainer>
     </div>
   );
 }

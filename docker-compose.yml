@@ -1,9 +1,9 @@
-# Lokal utvecklingsmiljö för backend + frontend (EuroMotors Internal Platform)
+# Local development environment for backend + frontend (EuroMotors Internal Platform)
 services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile # Din befintliga backend-Dockerfil
+      dockerfile: Dockerfile # Existing backend-Dockerfile
     container_name: image-editor-backend
     ports:
       - "3000:3000"
@@ -13,7 +13,7 @@ services:
     volumes:
       - ./backend:/app
     command: ["npm", "run", "dev"]
-    # Gör att backend startar om automatiskt vid kodändringar
+    # Make backend restart automatically on code changes
     develop:
       watch:
         - action: sync

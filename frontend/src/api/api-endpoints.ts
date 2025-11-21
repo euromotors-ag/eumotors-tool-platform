@@ -1,9 +1,8 @@
-export const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+export const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 const IMAGE_PROCESS_ENDPOINT =
-  import.meta.env.VITE_IMAGE_PROCESS_ENDPOINT || "/api/v1/images/process";
-const SCRAPE_ENDPOINT =
-  import.meta.env.VITE_SCRAPE_ENDPOINT || "/api/v1/scrape";
+  import.meta.env.VITE_IMAGE_PROCESS_ENDPOINT || "";
+const SCRAPE_ENDPOINT = import.meta.env.VITE_SCRAPE_ENDPOINT || "";
 
 export const API_ENDPOINTS = {
   images: {

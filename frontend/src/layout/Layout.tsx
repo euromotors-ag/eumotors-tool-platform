@@ -1,11 +1,8 @@
-import { useInactivityDetector } from "../hooks/useInactivityDetector";
 import { ToastProvider } from "../contexts/ToastContext.tsx";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 
 function Layout({ children }: { children: React.ReactNode }) {
-  useInactivityDetector();
-
   return (
     <ToastProvider>
       <div className="flex flex-col min-h-screen">
