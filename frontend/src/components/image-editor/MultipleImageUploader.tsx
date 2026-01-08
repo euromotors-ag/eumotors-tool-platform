@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import "../../styles/uploader.css";
 import UrlImageScraper from "./UrlImageScraper";
 import {
@@ -15,9 +15,6 @@ interface Props {
   onImagesSelected?: (files: File[]) => void;
   onClear?: () => void;
   labelText?: string;
-  browseText?: string;
-  chooseFileText?: string;
-  selectedCountText?: string;
   onResetAll?: () => void;
   onSourceDirHandleChange?: (
     dirHandle: FileSystemDirectoryHandle | null
@@ -31,9 +28,6 @@ export default function MultipleImageUploader({
   accept = "*",
   onImagesSelected,
   onClear,
-  browseText = "Browse",
-  chooseFileText = "Choose Files...",
-  selectedCountText = "files selected",
   onResetAll,
   onSourceDirHandleChange,
 }: Props) {
@@ -43,6 +37,7 @@ export default function MultipleImageUploader({
   const folderInputRef = useRef<HTMLInputElement>(null);
   const [uploadMode, setUploadMode] = useState<"files" | "folder">("files");
   const [sourcePath, setSourcePath] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [sourceDirHandle, setSourceDirHandle] =
     useState<FileSystemDirectoryHandle | null>(null);
   const [isUrlScraperOpen, setIsUrlScraperOpen] = useState(false);
@@ -189,22 +184,8 @@ export default function MultipleImageUploader({
     handleFilesSelected(files);
   };
 
-  const getInputText = () => {
-    if (cachedFiles.length === 0) {
-      return chooseFileText;
-    } else if (cachedFiles.length === 1) {
-      return cachedFiles[0].name;
-    } else {
-      return `${cachedFiles.length} ${selectedCountText}`;
-    }
-  };
-
   return (
     <div className="custom-file-container" data-upload-id={uploadId}>
-      <div className="label-container">
-        <h3 className="mb-2 text-xl font-medium">Upload Images</h3>
-      </div>
-
       <div className="mb-2 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
           <Button
@@ -258,43 +239,29 @@ export default function MultipleImageUploader({
         </Button>
       </div>
 
-      <label className="input-container">
-        <input
-          ref={fileInputRef}
-          accept={accept}
-          className="input-hidden"
-          id={`file-upload-with-preview-${uploadId}`}
-          multiple={multiple}
-          type="file"
-          onChange={handleFileChange}
-        />
-        {/* Folder input - using webkitdirectory attribute */}
-        <input
-          ref={folderInputRef}
-          accept={accept}
-          className="input-hidden"
-          id={`folder-upload-with-preview-${uploadId}`}
-          type="file"
-          // @ts-expect-error - webkitdirectory is a non-standard attribute not included in TypeScript's HTMLInputElement definition
-          webkitdirectory=""
-          directory=""
-          multiple
-          onChange={handleFileChange}
-        />
-        <span className="input-visible text-sm sm:text-base">
-          {getInputText()}
-          <span
-            className="browse-button text-sm sm:text-base"
-            onClick={(e) => {
-              e.preventDefault();
-              if (fileInputRef.current) {
-                fileInputRef.current.click();
-              }
-            }}>
-            {browseText}
-          </span>
-        </span>
-      </label>
+      {/* Hidden file inputs - needed for button functionality */}
+      <input
+        ref={fileInputRef}
+        accept={accept}
+        className="hidden"
+        id={`file-upload-with-preview-${uploadId}`}
+        multiple={multiple}
+        type="file"
+        onChange={handleFileChange}
+      />
+      {/* Folder input - using webkitdirectory attribute */}
+      <input
+        ref={folderInputRef}
+        accept={accept}
+        className="hidden"
+        id={`folder-upload-with-preview-${uploadId}`}
+        type="file"
+        // @ts-expect-error - webkitdirectory is a non-standard attribute not included in TypeScript's HTMLInputElement definition
+        webkitdirectory=""
+        directory=""
+        multiple
+        onChange={handleFileChange}
+      />
 
       <div className="text-xs text-gray-400 mt-2">
         By uploading an image, you agree to our Terms of Service and Privacy

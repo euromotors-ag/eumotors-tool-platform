@@ -32,17 +32,15 @@ function Image() {
     <div className="bg-background text-foreground min-h-screen py-8">
       <PageContainer>
         <h1 className="text-3xl font-bold mb-6">Image Editor</h1>
-        <p className="text-muted-foreground mb-8">
+        <p className="text-muted-foreground mb-6">
           Upload and process car images with our AI-powered background removal
           tool
         </p>
 
-        <div className="mb-8">
-          <Uploader
-            onImageProcessed={handleImageProcessed}
-            onSourceDirHandleChange={handleSourceDirHandleChange}
-          />
-        </div>
+        <Uploader
+          onImageProcessed={handleImageProcessed}
+          onSourceDirHandleChange={handleSourceDirHandleChange}
+        />
 
         <ProcessedImagesGallery
           images={processedImages}

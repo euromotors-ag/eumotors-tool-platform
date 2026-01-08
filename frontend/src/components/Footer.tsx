@@ -8,7 +8,7 @@ function Footer() {
           {/* Social icons */}
           <div className="flex justify-center md:justify-start space-x-6 md:order-2 w-full md:w-auto">
             <a
-              href="https://github.com/TheProfitMind"
+              href="https://github.com/euromotors-ag"
               target="_blank"
               className="text-muted-foreground hover:text-foreground transition-colors">
               <span className="sr-only">GitHub</span>
@@ -77,7 +77,8 @@ function Footer() {
               </li>
               <li>
                 <a
-                  href="https://auto-scout-linker-bilalovai.replit.app/cars"
+                  href="https://ai.eumotors.ch/cars"
+                  target="_blank"
                   className="text-base text-gray-400 hover:text-white transition-colors">
                   AutoScout Generator
                 </a>
@@ -100,7 +101,7 @@ function Footer() {
               </li>
               <li>
                 <a
-                  href="https://es.linkedin.com/in/alexander-trott-2a76b8130"
+                  href="https://www.linkedin.com/company/euromotors-ag/"
                   target="_blank"
                   className="text-base text-gray-400 hover:text-white transition-colors">
                   LinkedIn

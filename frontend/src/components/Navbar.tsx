@@ -8,7 +8,13 @@ import {
   ExternalLinkIcon,
   UserIcon,
   LogOutIcon,
+  FileDownIcon,
+  Grip,
+  MessageSquare,
+  Home,
+  FileCode,
 } from "lucide-react";
+import companyLogo from "@/assets/company_logo.svg";
 
 import {
   Accordion,
@@ -16,7 +22,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -82,30 +88,38 @@ const Navbar = () => {
 
   const menu: MenuItem[] = [
     {
-      title: "Start",
-      url: "/",
-    },
-    {
       title: "Editors",
       url: "#",
       items: [
         {
           title: "Image Editor",
-          description: "Redigera och bearbeta bilder med CarCutter",
+          description: "Edit and process images with CarCutter",
           icon: <ImageIcon className="size-5 shrink-0" />,
           url: "/image-editor",
         },
         {
           title: "Data Editor",
-          description: "Redigera och hantera bilddata och metadata",
+          description: "Edit and manage car data and metadata",
           icon: <FileTextIcon className="size-5 shrink-0" />,
           url: "/data-editor",
         },
         {
           title: "Scrape Editor",
-          description: "Skrapa och ladda ner bilder från webben",
+          description: "Scrape images and data from the web",
           icon: <GlobeIcon className="size-5 shrink-0" />,
           url: "/scrape-editor",
+        },
+      ],
+    },
+    {
+      title: "Converters",
+      url: "#",
+      items: [
+        {
+          title: "PDF Convert",
+          description: "Convert PDF files to other formats",
+          icon: <FileDownIcon className="size-5 shrink-0" />,
+          url: "/converters",
         },
       ],
     },
@@ -115,9 +129,9 @@ const Navbar = () => {
       items: [
         {
           title: "AutoScout Tool",
-          description: "Generera länkar för AutoScout24",
+          description: "Generate links for AutoScout24",
           icon: <ExternalLinkIcon className="size-5 shrink-0" />,
-          url: "https://auto-scout-linker-bilalovai.replit.app/cars",
+          url: "https://ai.eumotors.ch/cars",
           external: true,
         },
       ],
@@ -126,9 +140,8 @@ const Navbar = () => {
 
   const logo = {
     url: "/",
-    src: "/company_logo.svg",
-    alt: "EuroMotors AG Logo",
-    title: "EuroMotors AG",
+    src: companyLogo,
+    alt: "EuroMotors AG",
   };
 
   return (
@@ -138,15 +151,12 @@ const Navbar = () => {
         <nav className="hidden items-center justify-between py-4 lg:flex">
           <div className="flex items-center gap-6">
             {/* Logo */}
-            <Link to={logo.url} className="flex items-center gap-2">
+            <Link to={logo.url} className="flex items-center">
               <img
                 src={logo.src}
-                className="max-h-8 dark:invert"
+                className="h-10 w-auto brightness-0 dark:brightness-100"
                 alt={logo.alt}
               />
-              <span className="text-lg font-semibold tracking-tighter">
-                {logo.title}
-              </span>
             </Link>
 
             <div className="flex items-center">
@@ -158,11 +168,78 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* User Profile Dropdown */}
+          {/* External Tools Dropdown & User Profile Dropdown */}
           <div className="flex items-center gap-2">
+            {/* Grip Dropdown for External Tools */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <button
+                  type="button"
+                  className="h-12 w-12 p-0 flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
+                  <Grip className="h-6 w-6" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-80 p-4" align="end" forceMount>
+                <div className="grid grid-cols-4 gap-3">
+                  <a
+                    href="https://eumotors.ch"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors group cursor-pointer">
+                    <div className="h-12 w-12 rounded-lg bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                      <Home className="h-7 w-7 text-blue-500" />
+                    </div>
+                    <span className="text-xs text-center text-foreground leading-tight">
+                      Eumotors Website
+                    </span>
+                  </a>
+                  <a
+                    href="https://eumotors.ch"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors group cursor-pointer">
+                    <div className="h-12 w-12 rounded-lg bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
+                      <ExternalLinkIcon className="h-7 w-7 text-purple-500" />
+                    </div>
+                    <span className="text-xs text-center text-foreground leading-tight">
+                      Eumotors Hub
+                    </span>
+                  </a>
+                  <a
+                    href="https://drive.google.com/file/d/13bfbljPRq3zzcPbNOIWFyEJokt5OLIXf/view?usp=drive_link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors group cursor-pointer">
+                    <div className="h-12 w-12 rounded-lg bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
+                      <FileCode className="h-7 w-7 text-orange-500" />
+                    </div>
+                    <span className="text-xs text-center text-foreground leading-tight">
+                      Eumotors Extension
+                    </span>
+                  </a>
+                  <a
+                    href="https://chat.google.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors group cursor-pointer">
+                    <div className="h-12 w-12 rounded-lg bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
+                      <MessageSquare className="h-7 w-7 text-green-500" />
+                    </div>
+                    <span className="text-xs text-center text-foreground leading-tight">
+                      Google Chat
+                    </span>
+                  </a>
+                  {/* Add more external tools here - they will automatically wrap to next row */}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* User Profile Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="relative h-10 w-10 rounded-full">
                   <Avatar>
                     <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
                       {getUserInitial()}
@@ -203,20 +280,111 @@ const Navbar = () => {
         {/* Mobile Menu */}
         <div className="block lg:hidden">
           <div className="flex items-center justify-between py-4">
-            {/* Logo */}
-            <Link to={logo.url} className="flex items-center gap-2">
-              <img
-                src={logo.src}
-                className="max-h-8 dark:invert"
-                alt={logo.alt}
-              />
-            </Link>
+            {/* Mobile Menu Sheet - Moved to left */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <MenuIcon className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>
+                    <Link to={logo.url} className="flex items-center">
+                      <img
+                        src={logo.src}
+                        className="h-10 w-auto brightness-0 dark:brightness-100"
+                        alt={logo.alt}
+                      />
+                    </Link>
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-6 p-4">
+                  <Accordion
+                    type="single"
+                    collapsible
+                    className="flex w-full flex-col gap-4">
+                    {menu.map((item) => renderMobileMenuItem(item))}
+                  </Accordion>
+                </div>
+              </SheetContent>
+            </Sheet>
 
             <div className="flex items-center gap-2">
+              {/* Grip Dropdown for Mobile */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="h-12 w-12 p-0 flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
+                    <Grip className="h-6 w-6" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-80 p-4"
+                  align="end"
+                  alignOffset={-24}
+                  forceMount>
+                  <div className="grid grid-cols-4 gap-3">
+                    <a
+                      href="https://eumotors.ch"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors group cursor-pointer">
+                      <div className="h-12 w-12 rounded-lg bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                        <Home className="h-7 w-7 text-blue-500" />
+                      </div>
+                      <span className="text-xs text-center text-foreground leading-tight">
+                        Eumotors Website
+                      </span>
+                    </a>
+                    <a
+                      href="https://auto-scout-linker-bilalovai.replit.app/cars"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors group cursor-pointer">
+                      <div className="h-12 w-12 rounded-lg bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
+                        <ExternalLinkIcon className="h-7 w-7 text-purple-500" />
+                      </div>
+                      <span className="text-xs text-center text-foreground leading-tight">
+                        Eumotors Hub
+                      </span>
+                    </a>
+                    <a
+                      href="https://drive.google.com/file/d/13bfbljPRq3zzcPbNOIWFyEJokt5OLIXf/view?usp=drive_link"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors group cursor-pointer">
+                      <div className="h-12 w-12 rounded-lg bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
+                        <FileCode className="h-7 w-7 text-orange-500" />
+                      </div>
+                      <span className="text-xs text-center text-foreground leading-tight">
+                        Eumotors Extension
+                      </span>
+                    </a>
+                    <a
+                      href="https://chat.google.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors group cursor-pointer">
+                      <div className="h-12 w-12 rounded-lg bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
+                        <MessageSquare className="h-7 w-7 text-green-500" />
+                      </div>
+                      <span className="text-xs text-center text-foreground leading-tight">
+                        Google Chat
+                      </span>
+                    </a>
+                    {/* Add more external tools here - they will automatically wrap to next row */}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               {/* User Profile for Mobile */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Button
+                    variant="ghost"
+                    className="relative h-10 w-10 rounded-full">
                     <Avatar>
                       <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
                         {getUserInitial()}
@@ -251,39 +419,6 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              {/* Mobile Menu Sheet */}
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <MenuIcon className="h-4 w-4" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent className="overflow-y-auto">
-                  <SheetHeader>
-                    <SheetTitle>
-                      <Link to={logo.url} className="flex items-center gap-2">
-                        <img
-                          src={logo.src}
-                          className="max-h-8 dark:invert"
-                          alt={logo.alt}
-                        />
-                        <span className="text-lg font-semibold">
-                          {logo.title}
-                        </span>
-                      </Link>
-                    </SheetTitle>
-                  </SheetHeader>
-                  <div className="flex flex-col gap-6 p-4">
-                    <Accordion
-                      type="single"
-                      collapsible
-                      className="flex w-full flex-col gap-4">
-                      {menu.map((item) => renderMobileMenuItem(item))}
-                    </Accordion>
-                  </div>
-                </SheetContent>
-              </Sheet>
             </div>
           </div>
         </div>

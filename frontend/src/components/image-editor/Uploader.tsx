@@ -182,10 +182,8 @@ const Uploader = ({
   }, [profileStatuses]);
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <div className="w-full max-w-6xl">
-        <div className="mt-4">
-          <MultipleImageUploader
+    <div className="w-full">
+      <MultipleImageUploader
             uploadId="car-images-upload"
             onImagesSelected={handleMultipleImagesSelected}
             maxFileCount={30}
@@ -235,20 +233,18 @@ const Uploader = ({
               </div>
             </>
           )}
-        </div>
 
-        {/* Shown during processing */}
-        {isLoading && (
-          <div className="mt-6 rounded-lg bg-gray-700 p-2 shadow-sm">
-            <ProcessingIndicator
-              profile={selectedProfile}
-              onCancel={() => {
-                // This function is no longer used, but keeping it as per instructions
-              }}
-            />
-          </div>
-        )}
-      </div>
+      {/* Shown during processing */}
+      {isLoading && (
+        <div className="mt-6 rounded-lg bg-gray-700 p-2 shadow-sm">
+          <ProcessingIndicator
+            profile={selectedProfile}
+            onCancel={() => {
+              // This function is no longer used, but keeping it as per instructions
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };

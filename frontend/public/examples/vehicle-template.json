@@ -1,0 +1,34 @@
+{
+  "vehicleId": "",
+  "manufacturer": "",
+  "model": "",
+  "vin": "",
+  "modelCode": "",
+  "modelYear": "",
+  "fuelType": "",
+  "powerKw": "",
+  "powerHp": "",
+  "mileage": "",
+  "price": {
+    "fixedPrice": "",
+    "offerPrice": "",
+    "sellingPrice": "",
+    "recommendedRetailPrice": ""
+  },
+  "location": {
+    "country": "",
+    "zipCode": "",
+    "city": ""
+  },
+  "dates": {
+    "productionDate": "",
+    "deliveryDate": "",
+    "regDate": ""
+  },
+  "condition": {
+    "damages": "",
+    "availability": "",
+    "paymentReceived": "",
+    "registrationDocument": ""
+  }
+}

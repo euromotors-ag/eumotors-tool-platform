@@ -71,7 +71,9 @@ function CustomSignIn() {
             Tools for EuroMotors AG
           </h2>
 
-          <p className="text-sm text-muted-foreground">Organisation-based access</p>
+          <p className="text-sm text-muted-foreground">
+            Organisation-based access
+          </p>
         </div>
 
         {/* Login Card */}
@@ -83,7 +85,7 @@ function CustomSignIn() {
               Welcome back
             </h3>
             <p className="text-muted-foreground text-sm">
-              Log In with your Google account to access the internal platform
+              Log In with your Google account
             </p>
           </div>
 

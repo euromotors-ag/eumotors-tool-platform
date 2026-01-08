@@ -170,7 +170,7 @@ function Home() {
               <a
                 href="#"
                 className="text-sm text-blue-400 hover:text-blue-300 transition">
-                View all updates →
+                View all updates
               </a>
             </div>
 
@@ -221,7 +221,7 @@ function Home() {
               <a
                 href="#"
                 className="text-sm text-blue-400 hover:text-blue-300 transition">
-                Report new issue →
+                Report new issue
               </a>
             </div>
 
@@ -238,7 +238,9 @@ function Home() {
                   <div key={issue.id} className="p-5 hover:bg-accent/50">
                     {/* Mobile: Stacked layout */}
                     <div className="block lg:hidden">
-                      <h4 className="font-medium mb-2">{issue.title}</h4>
+                      <h4 className="font-medium mb-2 text-base">
+                        {issue.title}
+                      </h4>
                       <div className="flex flex-wrap gap-2 mb-3">
                         <span
                           className={`px-2 py-0.5 rounded-full text-xs ${getStatusStyles(
@@ -263,7 +265,9 @@ function Home() {
                       <div className="flex justify-between items-start">
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{issue.title}</h4>
+                            <h4 className="font-medium text-base">
+                              {issue.title}
+                            </h4>
                             <span
                               className={`px-2 py-0.5 rounded-full text-xs ${getStatusStyles(
                                 issue.status
