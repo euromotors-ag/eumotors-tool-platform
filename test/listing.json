@@ -1,0 +1,404 @@
+{
+  "id": "OTg5NGYxMzctNDRjNi00NDBhLWI4OGYtZDU2MWM4MTFhNTMw",
+  "images": [
+    "https://img.classistatic.de/api/v1/mo-prod/images/b6/b68e962f-3445-4652-ad9c-d901baa4d3c2?rule=mo-1600",
+    "https://img.classistatic.de/api/v1/mo-prod/images/01/01cfea0e-8fed-4b07-910f-532609c1f200?rule=mo-1600",
+    "https://img.classistatic.de/api/v1/mo-prod/images/52/52d86e20-f551-4659-ac6e-6a229b009a33?rule=mo-1600",
+    "https://img.classistatic.de/api/v1/mo-prod/images/12/1256c19a-c9a5-4bb1-8bde-41bf662342bd?rule=mo-1600",
+    "https://img.classistatic.de/api/v1/mo-prod/images/ef/ef7cf606-b940-464e-8074-962f770586b5?rule=mo-1600",
+    "https://img.classistatic.de/api/v1/mo-prod/images/34/34ee57d5-6b1a-4cd6-8e2f-59571d9f7935?rule=mo-1600",
+    "https://img.classistatic.de/api/v1/mo-prod/images/b8/b8830948-2d39-46cf-9043-871d9970b80c?rule=mo-1600",
+    "https://img.classistatic.de/api/v1/mo-prod/images/5d/5dba7cb4-dc47-4104-894d-77043c190048?rule=mo-1600",
+    "https://img.classistatic.de/api/v1/mo-prod/images/eb/eb938a9c-6a40-49b3-b224-20a09a1bf86c?rule=mo-1600",
+    "https://static.classistatic.de/consumer-webapp/static/modal-financing-loan-df.728316901659ddd52365..png"
+  ],
+  "price_b2b": {
+    "value": 87904,
+    "currency": "CHF"
+  },
+  "price_b2c": {
+    "value": 92000,
+    "currency": "CHF"
+  },
+  "data": {
+    "vin": {
+      "type": "err"
+    },
+    "brand": {
+      "type": "ok",
+      "value": "BMW"
+    },
+    "model": {
+      "type": "ok",
+      "value": "X7 M60"
+    },
+    "fuel_type": {
+      "type": "ok",
+      "value": "BENZIN"
+    },
+    "body_type": {
+      "type": "ok",
+      "value": "SUV"
+    },
+    "drive_type": {
+      "type": "ok",
+      "value": "ALLWHEELDRIVE"
+    },
+    "transmission_type": {
+      "type": "ok",
+      "value": "AUTOMATIC"
+    },
+    "exterior_color": {
+      "type": "ok",
+      "value": "BLUE"
+    },
+    "interior_color": {
+      "type": "ok",
+      "value": "BLACK"
+    },
+    "interior_material": {
+      "type": "ok",
+      "value": "LEATHER"
+    },
+    "energy_efficiency": {
+      "type": "ok",
+      "value": "G"
+    },
+    "euro_norm": {
+      "type": "ok",
+      "value": "EURO 6"
+    },
+    "equipment": {
+      "type": "ok",
+      "value": [
+        {
+          "type": "ok",
+          "value": "KEYLESS"
+        },
+        {
+          "type": "ok",
+          "value": "ABS"
+        },
+        {
+          "type": "ok",
+          "value": "ADAPTIVE CORNERING LIGHT"
+        },
+        {
+          "type": "ok",
+          "value": "ADAPTIVE CRUISE CONTROL"
+        },
+        {
+          "type": "ok",
+          "value": "ADAPTIVE CHASSI"
+        },
+        {
+          "type": "ok",
+          "value": "AIR SUSPENSION"
+        },
+        {
+          "type": "ok",
+          "value": "ALLOY WHEELS"
+        },
+        {
+          "type": "ok",
+          "value": "AMBIENT LIGHTNING"
+        },
+        {
+          "type": "ok",
+          "value": "ANDROID AUTO"
+        },
+        {
+          "type": "ok",
+          "value": "APPLE CARPLAY"
+        },
+        {
+          "type": "ok",
+          "value": "ARMREST"
+        },
+        {
+          "type": "ok",
+          "value": "AUTOMATIC HIGH BEAM"
+        },
+        {
+          "type": "ok",
+          "value": "BLUETOOTH"
+        },
+        {
+          "type": "ok",
+          "value": "BOARD COMPUTER"
+        },
+        {
+          "type": "ok",
+          "value": "BREAKDOWN KIT"
+        },
+        {
+          "type": "ok",
+          "value": "CENTRAL LOCKING"
+        },
+        {
+          "type": "ok",
+          "value": "DAYTIME RUNNING LIGHT"
+        },
+        {
+          "type": "ok",
+          "value": "DIGITAL COCKPIT"
+        },
+        {
+          "type": "ok",
+          "value": "DIGITAL RADIO (DAB)"
+        },
+        {
+          "type": "ok",
+          "value": "DISTANCE WARNING SYSTEM"
+        },
+        {
+          "type": "ok",
+          "value": "ELECTRIC SEATS"
+        },
+        {
+          "type": "ok",
+          "value": "EMERGENCY BRAKE"
+        },
+        {
+          "type": "ok",
+          "value": "EMERGENCY CALL"
+        },
+        {
+          "type": "ok",
+          "value": "ESP"
+        },
+        {
+          "type": "ok",
+          "value": "FATIGUE WARNING"
+        },
+        {
+          "type": "ok",
+          "value": "FRONT ISOFIX MOUNTS"
+        },
+        {
+          "type": "ok",
+          "value": "GEAR SHIFT PADDLES"
+        },
+        {
+          "type": "ok",
+          "value": "HANDS FREE"
+        },
+        {
+          "type": "ok",
+          "value": "HEAD UP DISPLAY"
+        },
+        {
+          "type": "ok",
+          "value": "HILL START ASSIST"
+        },
+        {
+          "type": "ok",
+          "value": "IMMOBILIZER"
+        },
+        {
+          "type": "ok",
+          "value": "INTEGRATED MUSIC STREAMING"
+        },
+        {
+          "type": "ok",
+          "value": "ISOFIX MOUNTS"
+        },
+        {
+          "type": "ok",
+          "value": "LANE DEPARTURE ASSIST"
+        },
+        {
+          "type": "ok",
+          "value": "LEATHER STEERING WHEEL"
+        },
+        {
+          "type": "ok",
+          "value": "LED HEADLIGHTS"
+        },
+        {
+          "type": "ok",
+          "value": "MULTIFUNCTIONAL STEERING WHEEL"
+        },
+        {
+          "type": "ok",
+          "value": "NAVIGATION"
+        },
+        {
+          "type": "ok",
+          "value": "NO SMOKING VEHICLE"
+        },
+        {
+          "type": "ok",
+          "value": "PACKAGE: SPORT PACKAGE"
+        },
+        {
+          "type": "ok",
+          "value": "PACKAGE: WINTER PACKAGE"
+        },
+        {
+          "type": "ok",
+          "value": "PANO"
+        },
+        {
+          "type": "ok",
+          "value": "PARCEL SHELF"
+        },
+        {
+          "type": "ok",
+          "value": "PARK ASSIST"
+        },
+        {
+          "type": "ok",
+          "value": "PARKING HEATER"
+        },
+        {
+          "type": "ok",
+          "value": "PARTICLE FILTER"
+        },
+        {
+          "type": "ok",
+          "value": "POWER STEERING"
+        },
+        {
+          "type": "ok",
+          "value": "POWER TAILGATE"
+        },
+        {
+          "type": "ok",
+          "value": "POWER WINDOWS"
+        },
+        {
+          "type": "ok",
+          "value": "PREPARATION FOR NAVIGATION"
+        },
+        {
+          "type": "ok",
+          "value": "RAIN SENSOR"
+        },
+        {
+          "type": "ok",
+          "value": "ROOF RAILS"
+        },
+        {
+          "type": "ok",
+          "value": "SEAT HEATING (REAR)"
+        },
+        {
+          "type": "ok",
+          "value": "SOUND SYSTEM"
+        },
+        {
+          "type": "ok",
+          "value": "SPEED LIMITER"
+        },
+        {
+          "type": "ok",
+          "value": "SPORT SEATS"
+        },
+        {
+          "type": "ok",
+          "value": "START/STOP FUNCTION"
+        },
+        {
+          "type": "ok",
+          "value": "SUMMER TIRES"
+        },
+        {
+          "type": "ok",
+          "value": "THEFT ALARM"
+        },
+        {
+          "type": "ok",
+          "value": "TINTED WINDOWS"
+        },
+        {
+          "type": "ok",
+          "value": "TIRE PRESSURE CONTROL"
+        },
+        {
+          "type": "ok",
+          "value": "TOUCHSCREEN"
+        },
+        {
+          "type": "ok",
+          "value": "TOW HOOK"
+        },
+        {
+          "type": "ok",
+          "value": "TRACTION CONTROL"
+        },
+        {
+          "type": "ok",
+          "value": "TRAFFIC SIGN RECOGNITION"
+        },
+        {
+          "type": "ok",
+          "value": "USB SOCKETS"
+        },
+        {
+          "type": "ok",
+          "value": "VOICE CONTROL"
+        },
+        {
+          "type": "ok",
+          "value": "REAR CAMERA"
+        },
+        {
+          "type": "ok",
+          "value": "LEATHER SEATS"
+        }
+      ]
+    },
+    "seats": {
+      "type": "ok",
+      "value": 5
+    },
+    "doors": {
+      "type": "ok",
+      "value": 5
+    },
+    "cylinders": {
+      "type": "ok",
+      "value": 8
+    },
+    "co2_emission_g_km": {
+      "type": "ok",
+      "value": 283
+    },
+    "power_hp": {
+      "type": "ok",
+      "value": 530
+    },
+    "mileage_km": {
+      "type": "ok",
+      "value": 36122
+    },
+    "cubic_capacity_cm3": {
+      "type": "ok",
+      "value": 4395
+    },
+    "empty_weight_kg": {
+      "type": "ok",
+      "value": 2675
+    },
+    "fuel_consumption_l_100km": {
+      "type": "ok",
+      "value": 12.5
+    },
+    "registration_date": {
+      "type": "ok",
+      "value": [2023, 10, null]
+    }
+  },
+  "comparison_link": "https://www.autoscout24.ch/de/s/mo-x7/mk-bmw?firstRegistrationYearFrom=2023&mileageTo=40000&fuelTypeGroups%5B0=&transmissionTypeGroups%5B0%5D=automatic&hadNoAccidentOnly=true&fuelTypes%5B0%5D=mhev-petrol&fuelTypes%5B1%5D=petrol&horsePowerFrom=520&sort%5B0%5D%5Btype%5D=PRICE&sort%5B0%5D%5Border%5D=ASC",
+  "comparison_price": {
+    "value": 109733,
+    "currency": "CHF"
+  },
+  "comparison_text": "Compared to top 3 cars offered by dealers",
+  "comment": "Original Title: BMW X7\n Original Link: https://suchen.mobile.de/fahrzeuge/details.html?id=435882125&ao=PICTURES&cn=DE&dam=false&fr=2023%3A&ft=PETROL&isSearchRequest=true&ml=%3A40000&ms=3500%3B143%3B%3B&ms=3500%3B332%3B%3B&od=up&pw=390%3A390&ref=srp&refId=d68ce05d-c52e-398f-5e34-68b6f521b7b7&s=Car&sb=p&searchId=d68ce05d-c52e-398f-5e34-68b6f521b7b7&st=DEALER&tr=AUTOMATIC_GEAR&vc=Car",
+  "trim": "xDrive",
+  "unique": "",
+  "dealer_phone": "",
+  "dealer_email": ""
+}
