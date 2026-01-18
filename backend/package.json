@@ -7,11 +7,17 @@
     "dev": "tsx watch index.ts",
     "build": "tsc && tsc-alias && node copy-assets.js",
     "postinstall": "npx playwright install --with-deps",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "tsx scripts/seed-all-enums.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.797.0",
     "@clerk/express": "^1.7.37",
+    "@prisma/adapter-pg": "^7.2.0",
+    "@prisma/client": "^7.2.0",
+    "@tanstack/react-query": "^5.90.16",
     "axios": "^1.12.2",
     "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",
@@ -22,14 +28,16 @@
     "helmet": "^8.1.0",
     "multer": "^1.4.5-lts.2",
     "path-to-regexp": "^6.2.1",
-    "playwright": "^1.49.0"
+    "pg": "^8.13.1",
+    "playwright": "^1.49.0",
+    "prisma": "^7.2.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/multer": "^1.4.12",
     "tsc-alias": "^1.8.15",
-    "tsx": "^4.19.3",
+    "tsx": "^4.21.0",
     "typescript": "~5.7.2"
   }
 }

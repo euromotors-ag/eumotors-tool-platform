@@ -1,6 +1,10 @@
 import type { ExtractedTextData } from "./pdfExtractor";
 import { v4 as uuidv4 } from "uuid";
 import { Buffer } from "buffer";
+import {
+  EQUIPMENT_CODE_MAP,
+  EQUIPMENT_CODE_TRASH_BIN,
+} from "./equipment-code-map";
 
 /**
  * Generates a unique ID using UUID v4 and converts it to base64
@@ -22,202 +26,6 @@ export interface MappingRule {
 export interface JsonTemplate {
   [key: string]: unknown;
 }
-
-/**
- * Equipment code to readable name mapping
- * Extracted from PDF text format: "CODE   Description"
- */
-export const EQUIPMENT_CODE_MAP: Record<string, string> = {
-  AV1: "DRIVING ON THE RIGHT",
-  A8C: "COMFORT EQUIPMENT",
-  B0A: "PART SET WITHOUT COUNTRY-SPECIFIC PRESCRIPTIVE STANDARD",
-  B01: "TYPE APPROVAL COUNTRY GERMANY",
-  C23: "OPERATING PERMIT, ALTERATION",
-  C7J: "ALLOY WHEELS",
-  DN4: "4-CYL. TURBO DIESEL",
-  EL5: "REMOTE ACCESS / REMOTE ACCESS + ONLINE INFOTAINMENT",
-  EM2: "ADVANCED DRIVER ATTENTION & DROWSINESS MONITOR",
-  ER1: 'REGIONAL CODE " ECE " FOR RADIO',
-  E0U: "SPECIAL EDITION",
-  FB0: "STANDARD PAINT COATING",
-  F0A: "NO SPECIAL PURPOSE VEHICLE, STANDARD EQUIPMENT",
-  GM1: "STANDARD ELECTRONIC ENGINE SOUND",
-  GP1: "VEHICLES WITH SPECIAL UPGRADE MEASURES",
-  GV1: "PREPARATION FOR ALCOHOL INTERLOCK",
-  G01: "SHOCK ABSORPTION IN FRONT",
-  G1C: "7-SPEED AUTOMATIC TRANSMISSION",
-  HS6: "TIRES 205/55 R17 91V LOW ROLLING RESISTANCE",
-  IG1: "CURB WEIGHT RANGE 1",
-  IN1: "REAR AXLE WEIGHT, TYPE 1",
-  J2D: "BATTERY 380 A (68 AH)",
-  KA6: "AREA VIEW 360°",
-  KK3: "REFRIGERANT R1234YF",
-  K8D: "WAGON/AVANT",
-  LT1: "WITH SPEED LIMITER",
-  L0L: "LEFT-HAND DRIVE",
-  L07: "SUSPENSION RANGE 07 INSTALLATION CONTROL ONLY, NO REQUIREMENT FORECAST",
-  ND1: "ADAPTER",
-  NI1: "WITH UN-ECE CYBERSECURITY & SOFTWARE UPDATE",
-  NY0: "STANDARD BATTERY/ALTERNATOR CAPACITY",
-  NZ2: "EMERGENCY CALL SYSTEM ECALL+",
-  N3D: "SEAT TRIM COVERS IN FABRIC/LEATHEREETTE LODGE",
-  PAB: "ASSISTED DRIVE",
-  PK1: "TOW BAR SWIVELING, EL. UNLOCKABLE AND WITH ADAPTER",
-  PLN: "LIGHT&VIEW PREMIUM",
-  PWC: "EL. ADJUSTABLE DRIVER SEAT AND EL. ADJUSTABLE PASSENGER SEAT, WITH MEMORY; EXTERIOR REAR VIEW MIRRORS WITH MEMORY",
-  QG1: "LONGLIFE SERVICE REGIME",
-  QH1: "VOICE CONTROL",
-  "2B1": "ADDITIONAL EXTERIOR NOISE SUPPRESSION",
-  "2CW": "VEHICLE CLASS DIFFERENTIATION -5EN-",
-  "2FT":
-    "LEATHER-WRAPPED MULTI-FUNCTION STEERING WHEEL, HEATED, WITH TIPTRONIC",
-  "2H5": "DRIVING PROFILE SELECTION AND CONVENTIONAL SHOCK ABSORBER",
-  "2JG": "BODY-COLORED BUMPERS",
-  "3A2":
-    "CHILD SEAT ANCHORS F. CHILD SEAT SYSTEM I-SIZE, 2X TOP TETHER AND CHILD SEAT ANCHORS IN FRONT ON FRONT PASSENGER SIDE",
-  "3CX": "NET PARTITION",
-  "3C7": "3-POINT SEAT BELT FOR CENTER REAR SEAT",
-  "3D3": "CENTER CONSOLE",
-  "3FU": "PANORAMIC ROOF (PSD)",
-  "3GN": "VARIABLE LUGGAGE/LOAD COMPARTMENT FLOOR",
-  "3NU": "UNSPLIT REAR SEAT BENCH, SPLIT FOLDING BACKREST, WITH CENTER ARMREST",
-  "3N3": "STORAGE COMPARTMENTS IN TRUNK",
-  "3PN": "POWER SEAT ADJUSTMENT FOR BOTH FRONT SEATS WITH MEMORY FEATURE",
-  "3QT": "3-POINT SEAT BELTS IN FRONT, WITH TENSIONER AND HEIGHT ADJUSTMENT",
-  "3Q7": "HEAD RESTRAINTS IN REAR WITH ADDITIONAL FUNCTION",
-  "3S2": "BLACK ROOF RAILS",
-  "3U6": "SEMI-EL. ROLLO (WITH SUN ROLLO, WITH STORAGE BOX)",
-  "3W3": "SPECIAL INTERIOR NOISE SUPPRESSION",
-  "3ZU": "3-POINT SEAT BELTS, OUTER REAR WITH ECE LABEL",
-  "4AU": "DOOR AND SIDE TRIM PANEL (UMBRELLA)",
-  "4A3": "SEAT HEATER FOR FRONT SEATS SEPARATELY CONTROLLED",
-  "4E6": "VIRTUAL PEDAL",
-  "4GW": "HEATED WINDSHIELD",
-  "4G3": "WITH EMERGENCY STEERING SUPPORT WITH TURN ASSIST",
-  "4H5": "POWER-OPERATED CHILD SAFETY LOCK",
-  "4K6": "KEYLESS LOCKING AND STARTING SYSTEM KEYLESS ADVANCED WITH SAFELOCK",
-  "4L6": "BREAKAWAY INTERIOR REARVIEW MIRROR, AUTO- DIMMING",
-  "4N1": "PADDED DASHBOARD",
-  "4P3": "REAR FLOOR PANEL MODULE, TYPE 4",
-  "4R4": "POWER WINDOWS WITH COMFORT OPERATION ANDCIRCUIT BREAKER",
-  "4UN":
-    "AIRBAG ON DRIVER AND FRONT PASSENGER SIDE, KNEE AIRBAG ON DRIVER SIDE, WITH FRONT PASSENGER AIRBAG DEACTIVATION",
-  "4WE": "EMISSION STANDARD, WLTP3 M1, N1- I//EU6EA",
-  "4ZE": "BLACK DECORATIVE TRIMS",
-  "5F1": "UWB-CAPABLE COUNTRY AND CARRIER FREQUENCY, 433.92 TO 434.42 MHZ",
-  QI6: "SERVICE INDICATOR 30 000   KM OR 2 YEARS ( VARIABLE )",
-  QK1: "WITH MULTIFUNCTION CAMERA",
-  QQ3: "INTERIOR AMBIENT LIGHTING AND SURROUND LIGHTING",
-  QR9: "WITH DYNAMIC ROAD SIGN DISPLAY",
-  QV3: "DAB - DIGITAL RADIO RECEPTION",
-  Q2J: "COMFORT SEATS IN FRONT (SPORTS SEATS FORRS)",
-  S18: "REGION",
-  S4Y: "REGION",
-  T6M: "4-CYLINDER DIESEL ENGINE 2.0 L UNIT 05L.C",
-  UG1: "HILL START ASSIST",
-  UH2: "PARKING BRAKE",
-  UK3: "MECHANICAL REAR SEAT RELEASE",
-  U5A: "INSTRUMENT CLUSTER, KM/H SPEEDOMETER",
-  U9E: "EXTERNAL, USB TYPE C DATA SOCKET(S) AND CHARGING SOCKET(S) WITH INCREASED CHARGING PERFORMANCE",
-  VF0: "STANDARD PEDAL CLUSTER",
-  VW5: "SUNSET + FRONT SIDE ACOUSTIC WINDOWS",
-  V1P: "TIRE SUPPLIERS FOR EU COUNTRIES",
-  WDD: "CANTON PACKAGE",
-  W3R: "AM TOUR",
-  YOZ: "REMOTE ACCESS + INFOTAINMENT ONLINE 3 YEARS",
-  "0AC": "FRONT STABILIZER BAR",
-  "0A2": "4 DOORS",
-  "0B3": "WHEELBASE",
-  "0FA": "STANDARD MANUFACTURING SEQUENCE",
-  "0F5": "FUEL SYSTEM FOR DIESEL ENGINE",
-  "0IJ":
-    "INSTALLATION DIFFERENTIATION FOR TRANSMISSION DQ381 -- VEHICLE COMPONENTS --",
-  "0NB": "NAMEPLATE SET (SKODA W. OCTAVIA, W/O 4X4, W/O HYBRID)",
-  "0N1": "STANDARD REAR AXLE",
-  "0P0": "REAR EXHAUST TAILPIPE (STANDARD)",
-  "0VC": "MANUAL IN GERMAN",
-  "0YP": "WEIGHT RANGE 14 INSTALLATION CONTROL ONLY, NO REQUIREMENT FORECAST",
-  "0Y1": "STANDARD CLIMATIC ZONES",
-  "1AQ":
-    "BRAKE CONTROL SYSTEM FOR VEHICLES WITHOUT ELECTRIC DRIVE (ESC AND ELECTROMECHANICAL BRAKE BOOSTER)",
-  "1EX": "SPECIAL IDENTIFICATION LABEL FOR EC FOR M1 PASSENGER VEHICLES",
-  "1G9": "SPACE-SAVING SPARE WHEEL FOR TEMPORARY USE, RADIAL TIRE (5-HOLE)",
-  "1JA": "REAR SHOCK ABSORPTION, BASIC VERSION 1",
-  "1KE": "DISC BRAKES IN REAR",
-  "1M6": "TRAILER HITCH MECHANICALLY SWIVELING ANDPOWER-DETACHABLE",
-  "1NM": "TRIMS FOR ALLOY WHEELS",
-  "1N3": "SPEED-RELATED VARIABLE STEERING ASSIST (SERVOTRONIC)",
-  "1PF": "STANDARD WHEEL BOLTS",
-  "1Q3": "MASS DAMPER FOR STEERING WHEEL, XX HZ",
-  "1S1": "TOOL KIT AND JACK",
-  "1X0": "FRONT-WHEEL DRIVE",
-  "1Y3": "ELECTRONIC DIFFERENTIAL LOCK XDS, DYNAMIC TRACTION SUPPORT",
-  "1ZE": "DISC BRAKES IN FRONT (GEOMET D)",
-  "1Z0": "INITIAL STANDARD FUEL FILLING (6L)",
-  "5JB":
-    "EXTERIOR MIRRORS: CONVEX ON DRIVER SIDE, CONVEX ON FRONT PASSENGER SIDE",
-  "5J1": "REAR SPOILER",
-  "5K7":
-    "TRANSPORT PROTECTION FILM (MINIMUM PROTECTION) WITH ADDITIONAL TRANSPORT PROTECTION MEASURES",
-  "5MB": "DECORATIVE INSERTS",
-  "5XC":
-    "SUN VISORS WITH ILLUMINATED VANITY MIRROR ON DRIVER AND FRONT PASSENGER SIDE",
-  "5ZF": "FRONT HEAD RESTRAINTS",
-  "6C2":
-    "SIDE AIRBAG IN FRONT WITH CURTAIN AIRBAGAND INTERACTION AIRBAG IN FRONT",
-  "6EP": "ADDITIONAL STONE GUARD BODY COVERS",
-  "6E3": "CENTER ARMREST IN FRONT",
-  "6FF": "EXTERIOR MIRROR HOUSINGS AND VARIOUS ADD-ON PARTS IN BODY COLOR",
-  "6I6": "LANE ASSIST WITH ADAPTIVE LANE GUIDANCE FUNCTION + EMERGENCY ASSIST",
-  "6LG": "STANDARD VENT",
-  "6M3": "NET PROGRAM + CARGOELEMENTS",
-  "6SG": 'LUGGAGE COMPARTMENT FLOOR COVERING "COMFORT"',
-  "6T2": "INTERIOR LIGHT IN FOOTWELL IN FRONT AND REAR",
-  "6XL":
-    "EXTERIOR MIRRORS WITH MEMORY FEATURE, AUTO- DIMMING, POWER-FOLDING/ADJUSTABLE/ HEATED",
-  "7AL":
-    "ANTI-THEFT ALARM SYSTEM, INTERIOR MONITORING, BACKUP HORN, AND TOWING PROTECTION",
-  "7B2": "12-VOLT SOCKET IN LUGGAGE BOOT",
-  "7E6": "ELECTRIC AUXILIARY AIR HEATER",
-  "7J2": "FPK DISPLAY",
-  "7K1": "TIRE PRESSURE MONITORING SYSTEM",
-  "7L6": "START-STOP SYSTEM WITH REGENERATIVE BRAKING",
-  "7P1": "POWER-ADJUSTABLE LUMBAR SUPPORT IN FRONTSEATS",
-  "7UY": "NAVIGATION SYSTEM (BASELINE)",
-  "7X2": "PARK DISTANCE CONTROL IN FRONT AND REAR",
-  "8DG":
-    "INFOTAINMENT SYSTEM WITH SCALABLE MODULE OPTIONS (OPTIONSINFOTAINMENT, MIB3 MODEL UPDATE) VERSION 2",
-  "8GV": "ALTERNATOR 180   A",
-  "8G5": "MULTIPLE MATRIX BEAM",
-  "8IU": "LED HEADLAMPS WITH VARIABLE LIGHT DISTRIBUTION",
-  "8J3":
-    "FRONT ASSIST - WITH WARNING AND BRAKING REACTION TO VEHICLES, PEDESTRIANS AND CYCLISTS",
-  "8M1": 'REAR WINDOW WIPER "AERO"',
-  "8N6": "WINDSHIELD WIPER INTERMITTENT CONTROL WITH LIGHT/RAIN SENSOR",
-  "8Q5": "DYNAMIC HEADLIGHT RANGE CONTROL, WITH CORNERING LIGHT (AFS 1)",
-  "8TL": "REAR FOG LIGHT ON ONE SIDE, BACK-UP LIGHT ON BOTH SIDES",
-  "8T3": "ADAPTIVE CRUISE CONTROL",
-  "8VQ":
-    "LED REAR COMBINATION LAMP, VARIABLE LIGHTING FUNCTIONS, SPECIAL STYLING",
-  "8WM": "CORNERING AND ALL WEATHER LIGHT",
-  "8X8": "WITH HEADLAMP WASHER SYSTEM, WITH WASHER FLUID LEVEL INDICATOR",
-  "8Y1": "TWO-TONE HORN",
-  "8ZQ": "ANTENNA FOR FM RECEPTION ONLY, DIVERSITY",
-  "8Z5": "NOT HOT COUNTRY",
-  "9AK": "CLIMATRONIC WITH IMPACT PRESSURE CONTROL, CFC-FREE",
-  "9E3": "LUGGAGE COMPARTMENT LIGHTING",
-  "9I5":
-    "SEPARATE DAYTIME RUNNING LIGHT WITH AUTOMATIC HEADLIGHT CONTROL AND AUTOMAT. COMING AND LEAVING HOME FEATURE",
-  "9P4":
-    "VISUAL AND ACOUSTIC SEAT BELT REMINDER, ELECTRIC CONTACT IN FRONT AND REAR",
-  "9TE": "ADDITIONAL RETRO-REFLECTORS (DOOR AREA)",
-  "9VS": "SOUND SYSTEM CANTON",
-  "9WJ": "SMART LINK (WIRED AND WIRELESS CONNECT)",
-  "9ZQ":
-    "COMFORT TELEPHONY: WIRELESS CHARGING (FAST CHARGE) WITHOUT EXTERNAL ANTENNA CONNECTION",
-  "9Z0": "OPERATING VOLTAGE 12 V",
-  X0A: "EQUIPMENT OPTIONS SUBSET FOR GERMANY",
-};
 
 /**
  * Extracts values from PDF text based on patterns
@@ -798,7 +606,7 @@ export function createListingTemplate(): JsonTemplate {
         value: "",
       },
       equipment: {
-        type: "ok",
+        type: "err",
         value: [],
       },
       seats: {
@@ -857,12 +665,13 @@ export function createListingTemplate(): JsonTemplate {
 }
 
 /**
- * Extracts equipment codes from PDF text and maps them to readable names
+ * Extracts equipment codes from PDF text and uses descriptions directly from PDF
+ * Filters out codes that are in the trash bin
  */
 function extractEquipmentCodes(
   text: string
-): Array<{ type: "ok"; value: string }> {
-  const equipment: Array<{ type: "ok"; value: string }> = [];
+): Array<{ type: "err"; value: string }> {
+  const equipment: Array<{ type: "err"; value: string }> = [];
 
   // Pattern to match equipment codes: CODE followed by 2+ spaces and description
   // Format: "AV1   Driving on the right" or "AV1   Driving on the right  A8C   Comfort"
@@ -876,23 +685,98 @@ function extractEquipmentCodes(
 
   const equipmentSection = equipmentSectionMatch[1];
 
-  // Match codes: 2-4 alphanumeric characters followed by 2+ spaces
-  const codePattern = /\b([A-Z0-9]{2,4})\s{2,}/g;
+  // Match codes with descriptions: CODE followed by 2+ spaces and description
+  // Pattern: CODE   Description (until next CODE or end)
+  const codePattern =
+    /\b([A-Z0-9]{2,4})\s{2,}([^\n\r]+?)(?=\s{2,}[A-Z0-9]{2,4}\s{2,}|\s{2,}Wheels|$)/g;
   const foundCodes = new Set<string>();
 
   let match;
   while ((match = codePattern.exec(equipmentSection)) !== null) {
     const code = match[1].trim();
-    if (code && EQUIPMENT_CODE_MAP[code] && !foundCodes.has(code)) {
+    const description = match[2].trim();
+
+    // Skip if code is in trash bin
+    if (EQUIPMENT_CODE_TRASH_BIN.has(code)) {
+      continue;
+    }
+
+    // Skip if we've already found this code (avoid duplicates)
+    if (foundCodes.has(code)) {
+      continue;
+    }
+
+    // Only add if we have both code and description
+    if (code && description) {
       foundCodes.add(code);
+      // Clean up description: remove extra whitespace and trailing separators
+      const cleanDescription = description
+        .replace(/\s{2,}.*$/, "") // Remove trailing content after 2+ spaces
+        .trim()
+        .toUpperCase(); // Normalize to uppercase
+
       equipment.push({
-        type: "ok",
-        value: EQUIPMENT_CODE_MAP[code],
+        type: "err",
+        value: cleanDescription,
       });
     }
   }
 
   return equipment;
+}
+
+/**
+ * Finds equipment codes in text that are not in EQUIPMENT_CODE_MAP
+ * Useful for identifying new codes or codes that might need to be added to trash bin
+ * Returns an array of objects with code and description
+ *
+ * NOTE: Since we now extract descriptions directly from PDFs, this function is mainly
+ * useful for debugging and identifying codes that should be added to trash bin.
+ */
+export function findMissingEquipmentCodes(
+  text: string
+): Array<{ code: string; description: string }> {
+  const missingCodes: Array<{ code: string; description: string }> = [];
+
+  // Look for "Equipments" or "Equipments" section
+  const equipmentSectionMatch = text.match(
+    /Equipments?\s{2,}(.+?)(?=\s{2,}Wheels|$)/is
+  );
+  if (!equipmentSectionMatch) {
+    return missingCodes;
+  }
+
+  const equipmentSection = equipmentSectionMatch[1];
+
+  // Match codes: 2-4 alphanumeric characters followed by 2+ spaces and description
+  // Pattern: CODE   Description
+  const codePattern =
+    /\b([A-Z0-9]{2,4})\s{2,}([^\n\r]+?)(?=\s{2,}[A-Z0-9]{2,4}\s{2,}|\s{2,}Wheels|$)/g;
+  const foundCodes = new Set<string>();
+
+  let match;
+  while ((match = codePattern.exec(equipmentSection)) !== null) {
+    const code = match[1].trim();
+    const description = match[2].trim();
+
+    // Skip if code is already in our map or we've already found it
+    // Also skip if it's in trash bin
+    if (
+      !EQUIPMENT_CODE_MAP[code] &&
+      !EQUIPMENT_CODE_TRASH_BIN.has(code) &&
+      !foundCodes.has(code) &&
+      code &&
+      description
+    ) {
+      foundCodes.add(code);
+      missingCodes.push({
+        code,
+        description: description.replace(/\s{2,}.*$/, "").trim(), // Clean up description
+      });
+    }
+  }
+
+  return missingCodes;
 }
 
 /**

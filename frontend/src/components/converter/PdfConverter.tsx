@@ -10,6 +10,7 @@ import {
   SettingsIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { FileDropZone } from "@/components/ui/FileDropZone";
 import { useToastContext } from "@/hooks/useToast";
 import {
   extractTextFromPdf,
@@ -101,11 +102,8 @@ function PdfConverter() {
     [success, errorToast, jsonTemplate, mappingRules]
   );
 
-  const handleFileSelect = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = event.target.files;
-      if (!files || files.length === 0) return;
-
+  const processFiles = useCallback(
+    async (files: File[]) => {
       const newFiles: UploadedFile[] = Array.from(files).map((file) => {
         const isPdf =
           file.type === "application/pdf" ||
@@ -125,7 +123,7 @@ function PdfConverter() {
       });
 
       setUploadedFiles((prev) => [...prev, ...newFiles]);
-      success(`${newFiles.length} file(s) added successfully`);
+      // Toast will be shown by FileDropZone's onFilesLoaded/onFolderLoaded callbacks
 
       // Automatically extract text from PDF files
       for (const newFile of newFiles) {
@@ -134,54 +132,7 @@ function PdfConverter() {
         }
       }
     },
-    [success, extractPdfText]
-  );
-
-  const handleDragOver = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      event.stopPropagation();
-    },
-    []
-  );
-
-  const handleDrop = useCallback(
-    async (event: React.DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      const files = event.dataTransfer.files;
-      if (!files || files.length === 0) return;
-
-      const newFiles: UploadedFile[] = Array.from(files).map((file) => {
-        const isPdf =
-          file.type === "application/pdf" ||
-          file.name.toLowerCase().endsWith(".pdf");
-        let preview: string | undefined;
-
-        if (!isPdf && file.type.startsWith("image/")) {
-          preview = URL.createObjectURL(file);
-        }
-
-        return {
-          id: `${Date.now()}-${Math.random()}`,
-          file,
-          preview,
-          isPdf,
-        };
-      });
-
-      setUploadedFiles((prev) => [...prev, ...newFiles]);
-      success(`${newFiles.length} file(s) added successfully`);
-
-      // Automatically extract text from PDF files
-      for (const newFile of newFiles) {
-        if (newFile.isPdf) {
-          await extractPdfText(newFile.id, newFile.file);
-        }
-      }
-    },
-    [success, extractPdfText]
+    [extractPdfText]
   );
 
   const handleRemoveFile = useCallback(
@@ -463,37 +414,21 @@ function PdfConverter() {
       </div>
 
       {/* Upload Area */}
-      <div
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        className="relative border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-primary transition-colors bg-muted/30">
-        <input
-          type="file"
-          id="file-upload"
-          multiple
-          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-        <label
-          htmlFor="file-upload"
-          className="cursor-pointer flex flex-col items-center justify-center gap-4">
-          <div className="rounded-full bg-primary/10 p-4">
-            <UploadIcon className="size-10 text-primary" />
-          </div>
-          <div>
-            <p className="text-lg font-semibold mb-2">
-              Drag and drop files here, or click to select
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Currently supports PDF files
-            </p>
-          </div>
-          <Button type="button" variant="outline" asChild>
-            <span>Choose Files</span>
-          </Button>
-        </label>
-      </div>
+      <FileDropZone
+        onFilesSelected={processFiles}
+        onFolderSelected={processFiles}
+        onFilesLoaded={(count) => success(`${count} file(s) added successfully`)}
+        onFolderLoaded={(count) =>
+          success(`Folder loaded: ${count} file(s) found`)}
+        onError={(error) => errorToast(error)}
+        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+        multiple={true}
+        isLoading={false}
+        title="Drag and drop files here, or click to select"
+        description="Currently supports PDF files"
+        buttonText="Choose Files"
+        showFolderOption={true}
+      />
 
       {/* File List */}
       {uploadedFiles.length > 0 && (

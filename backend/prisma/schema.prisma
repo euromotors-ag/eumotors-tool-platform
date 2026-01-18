@@ -1,0 +1,392 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email             String           @unique
+  passwordHash      String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  role              String           @default("USER")
+  isActive          Boolean          @default(true)
+  refreshToken      String?
+  lastLogin         DateTime?
+  reservedListings  CatalogListing[] @relation("ReservedListings")
+  garage            Garage?
+  uploadedDocuments OrderDocument[]
+  profile           UserProfile?
+  shareTokens       ShareToken[]
+}
+
+model UserProfile {
+  userId          String   @id @db.Uuid
+  firstName       String?
+  lastName        String?
+  jobTitle        String?
+  phoneNumber     String?
+  profileImage    String?
+  website         String?
+  companyName     String?
+  companyType     String?
+  vatNumber       String?
+  language        String?
+  country         String?
+  city            String?
+  address         String?
+  postalCode      String?
+  logoUrl         String?
+  dealerNumber    String?
+  businessLicense String?
+  invoiceInfo     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserPerformance {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  soldAt        DateTime @default(now())
+  soldPrice     Float
+  profit        Float
+  margin        Float
+  customerName  String?
+  customerEmail String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  garageId      String   @db.Uuid
+  garage        Garage   @relation(fields: [garageId], references: [id], onDelete: Cascade)
+}
+
+model Garage {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String            @unique @db.Uuid
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items            GarageItem[]
+  userPerformances UserPerformance[]
+}
+
+model GarageItem {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  garageId        String          @db.Uuid
+  itemStatus      ItemStatus      @default(FAVORITE)
+  orderStatus     OrderStatus?
+  expiresAt       DateTime?
+  orderQuantity   Int?
+  orderTotalPrice Int?
+  orderNotes      String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  carId           String?
+  batchOfferId    String?
+  batchOffer      BatchOffer?     @relation(fields: [batchOfferId], references: [id], onDelete: Cascade)
+  car             Car?            @relation(fields: [carId], references: [id], onDelete: Cascade)
+  garage          Garage          @relation(fields: [garageId], references: [id], onDelete: Cascade)
+  documents       OrderDocument[]
+
+  @@unique([garageId, carId, itemStatus])
+  @@unique([garageId, batchOfferId, itemStatus])
+}
+
+model OrderDocument {
+  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId            String          @db.Uuid
+  fileName           String
+  filePath           String
+  fileSize           Int
+  mimeType           String
+  uploadedBy         String          @db.Uuid
+  uploadedAt         DateTime        @default(now())
+  signedAt           DateTime?
+  notes              String?
+  originalDocumentId String?         @db.Uuid
+  documentType       String
+  documentStatus     String          @default("PENDING_SIGNATURE")
+  garageItem         GarageItem      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  originalDocument   OrderDocument?  @relation("DocumentVersions", fields: [originalDocumentId], references: [id])
+  signedVersions     OrderDocument[] @relation("DocumentVersions")
+  uploadedByUser     User            @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([uploadedBy])
+  @@index([documentType])
+  @@index([documentStatus])
+}
+
+model BatchOffer {
+  id                 String           @id
+  supplier           String
+  currency           String           @default("CHF")
+  status             BatchOfferStatus @default(ACTIVE)
+  market             String           @default("CH")
+  brand              String
+  model              String
+  fuel_type          String?
+  body_type          String?
+  mileage_km         Int?
+  power_hp           Int?
+  cubic_capacity_cm3 Int
+  empty_weight_kg    Int
+  co2_emission_g_km  Float
+  equipment          String[]
+  image_urls         String[]
+  created_at         DateTime         @default(now())
+  updated_at         DateTime         @updatedAt
+  comparison_link    String?
+  comparison_text    String?
+  seats              Int?
+  trim               String?
+  color_exterior     String?
+  color_interior     String?
+  comparison_price   Int?
+  first_reg_day      Int?
+  first_reg_month    Int?
+  first_reg_year     Int?
+  price              Int?
+  price_modified     Int?
+  qty_available      Int?
+  qty_order_max      Int?
+  qty_order_min      Int?             @default(1)
+  qty_total          Int?
+  trans_type         String?
+  valid_from         DateTime?
+  drive_type         String?
+  garageItems        GarageItem[]
+}
+
+model Car {
+  id                       String          @id
+  vin                      String?
+  brand                    String
+  model                    String
+  fuel_type                String?
+  body_type                String?
+  drive_type               String?
+  transmission_type        String?
+  exterior_color           String?
+  interior_color           String?
+  energy_efficiency        String?
+  euro_norm                String?
+  equipment                String[]        // Legacy: behålls för bakåtkompatibilitet och enkel visning
+  seats                    Int
+  doors                    Int
+  cylinders                Int
+  power_hp                 Int
+  mileage_km               Int
+  cubic_capacity_cm3       Int
+  empty_weight_kg          Int
+  co2_emission_g_km        Float
+  fuel_consumption_l_100km Float
+  first_registration_year  Int
+  first_registration_month Int
+  first_registration_day   Int?
+  created_at               DateTime        @default(now())
+  original_link            String
+  equipment_t1             String[]
+  equipment_t2             String[]
+  interior_material        String?
+  trim                     String?
+  CatalogListing           CatalogListing?
+  garageItems              GarageItem[]
+  equipmentItems           CarEquipment[]  // Many-to-many relation för avancerad filtrering och sökning
+}
+
+model CatalogListing {
+  title                String
+  carId                String        @id
+  comparison_link      String
+  created_at           DateTime      @default(now())
+  updated_at           DateTime
+  comparison_price_chf Int
+  price_chf            Int
+  image_urls           String[]
+  market               String        @default("CH")
+  reservedById         String?       @db.Uuid
+  reservedUntil        DateTime?
+  status               ListingStatus @default(AVAILABLE)
+  modified_price_chf   Int?
+  unique               String?
+  ai_description_b2b   String?
+  ai_description_b2c   String?
+  comparison_text      String?
+  dealer_email         String?
+  dealer_phone         String?
+  Car                  Car           @relation(fields: [carId], references: [id])
+  reservedBy           User?         @relation("ReservedListings", fields: [reservedById], references: [id])
+}
+
+model ContactMessage {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  phone     String
+  company   String?
+  message   String
+  email     String?
+  status    String   @default("pending")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+model ShareToken {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token        String   @unique @default(dbgenerated("gen_random_uuid()"))
+  entityType   String   @default("car") // "car" or "batchOffer"
+  carId        String?
+  batchOfferId String?
+  createdById  String   @db.Uuid
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+  viewCount    Int      @default(0)
+  maxViews     Int?
+  lastViewedAt DateTime?
+  lastViewedIp String?
+  isActive     Boolean  @default(true)
+  createdBy    User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([carId])
+  @@index([batchOfferId])
+  @@index([expiresAt])
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  PROCESSING
+  PAYMENT_PENDING
+  PAYMENT_CONFIRMED
+}
+
+enum ItemStatus {
+  FAVORITE
+  RESERVED
+  PURCHASED
+}
+
+enum BatchOfferStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+  SOLD_OUT
+}
+
+enum ListingStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  HIDDEN
+}
+
+model Equipment {
+  id          String        @id @default(uuid())
+  name        String        @unique @db.VarChar(255)
+  binCategory EquipmentBin  // Kategorisering för "bin" (godkänd vs skräp)
+  category    String?       @db.VarChar(100) // Funktionell kategori (t.ex. "Safety & Performance", "Comfort", "Technology")
+  source      String?       @default("manual") @db.VarChar(50)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  createdBy   String?       @map("created_by") @db.VarChar(255)
+  code        String?       @unique @db.VarChar(100) // Canonical code (UPPER_SNAKE_CASE) for normalization - optional, auto-generated from name if not provided
+  cars        CarEquipment[] // Many-to-many relation för avancerad filtrering
+  mappings    EquipmentMapping[] // Mappings from raw values to this canonical equipment
+
+  @@index([name])
+  @@index([binCategory])
+  @@index([category])
+  @@index([code])
+}
+
+// Mapping table: maps raw equipment values from source systems to canonical equipment
+model EquipmentMapping {
+  id              String    @id @default(uuid())
+  sourceSystem    String    @db.VarChar(100) // e.g., "pdf", "blocket", "mobile", "manual"
+  rawValue        String    @db.VarChar(255) // Original raw value from source
+  equipmentId     String    @map("equipment_id") // Reference to canonical Equipment
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdBy       String?   @map("created_by") @db.VarChar(255)
+  
+  equipment       Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceSystem, rawValue]) // One mapping per source system + raw value combination
+  @@index([sourceSystem])
+  @@index([rawValue])
+  @@index([equipmentId])
+}
+
+// Optional: Audit trail for raw equipment values (can be removed if not needed)
+// model RawCarEquipment {
+//   id              String    @id @default(uuid())
+//   carId           String?   @map("car_id")
+//   sourceSystem    String    @db.VarChar(100)
+//   rawValue        String    @db.VarChar(255)
+//   normalizedId    String?   @map("normalized_id")
+//   status          String    @default("YELLOW") @db.VarChar(20)
+//   createdAt       DateTime  @default(now()) @map("created_at")
+//   normalized      Equipment? @relation(fields: [normalizedId], references: [id], onDelete: SetNull)
+//   @@unique([sourceSystem, rawValue, carId])
+//   @@index([carId])
+//   @@index([sourceSystem])
+//   @@index([rawValue])
+//   @@index([status])
+//   @@index([normalizedId])
+// }
+
+// Junction table för many-to-many relation mellan Car och Equipment
+// Används för avancerad filtrering och sökning i marketplace
+model CarEquipment {
+  id          String    @id @default(uuid())
+  carId       String    @map("car_id")
+  equipmentId String    @map("equipment_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  
+  car         Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([carId, equipmentId]) // En bil kan inte ha samma equipment två gånger
+  @@index([carId])
+  @@index([equipmentId])
+}
+
+model CarEnum {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(255)
+  enumType  CarEnumType
+  parentId  String?  @db.VarChar(255) // För MODEL_OPTIONS (brand -> models)
+  source    String?  @default("enum") @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([name, enumType, parentId])
+  @@index([enumType])
+  @@index([parentId])
+}
+
+enum EquipmentBin {
+  bin_good
+  bin_trash
+}
+
+enum CarEnumType {
+  body_type
+  fuel_type
+  drive_type
+  transmission_type
+  color
+  interior_material
+  brand
+  model
+  energy_efficiency
+  euro_norm
+  currency
+}

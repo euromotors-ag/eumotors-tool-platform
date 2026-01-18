@@ -21,14 +21,23 @@ validateEnvironmentVariables();
 // Lazy-load routes AFTER environment variables are loaded
 let imageRoutes: any;
 let scrapeRoutes: any;
+let equipmentRoutes: any;
+let enumRoutes: any;
+let referenceRoutes: any;
 
 // Initialize routes after environment variables are loaded
 (async () => {
   const routesModule = await import("@routes/image.routes.js");
   const scrapeModule = await import("@routes/scrape.routes.js");
+  const equipmentModule = await import("@routes/equipment.routes.js");
+  const enumModule = await import("@routes/enum.routes.js");
+  const referenceModule = await import("@routes/reference.routes.js");
 
   imageRoutes = routesModule.default;
   scrapeRoutes = scrapeModule.default;
+  equipmentRoutes = equipmentModule.default;
+  enumRoutes = enumModule.default;
+  referenceRoutes = referenceModule.default;
 
   startServer();
 })();
@@ -73,8 +82,9 @@ function startServer() {
 
         callback(new Error("Not allowed by CORS"));
       },
-      methods: ["GET", "POST", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "Accept", "If-None-Match", "ETag"],
+      exposedHeaders: ["ETag"],
       credentials: true,
     })
   );
@@ -106,6 +116,9 @@ function startServer() {
   // API Routes with Clerk authentication
   app.use("/api/v1/images", imageRoutes); // Temporarily removed requireAuth() for testing
   app.use("/api/v1/scrape", scrapeRoutes);
+  app.use("/api/v1/equipment", equipmentRoutes);
+  app.use("/api/v1/enums", enumRoutes);
+  app.use("/api/reference", referenceRoutes);
 
   // Health check endpoint
   app.get("/api/health", (req, res) => {

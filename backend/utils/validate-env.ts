@@ -1,5 +1,6 @@
 export function validateEnvironmentVariables() {
   const requiredVars = [
+    "DATABASE_URL",
     "AWS_S3_BUCKET_NAME",
     "AWS_S3_BUCKET_REGION",
     "AWS_S3_BUCKET_ACCESS_KEY",

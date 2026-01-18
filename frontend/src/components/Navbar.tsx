@@ -98,10 +98,10 @@ const Navbar = () => {
           url: "/image-editor",
         },
         {
-          title: "Data Editor",
-          description: "Edit and manage car data and metadata",
-          icon: <FileTextIcon className="size-5 shrink-0" />,
-          url: "/data-editor",
+          title: "JSON Editor",
+          description: "Zero-lag JSON file editor with equipment validation",
+          icon: <FileCode className="size-5 shrink-0" />,
+          url: "/json-editor",
         },
         {
           title: "Scrape Editor",

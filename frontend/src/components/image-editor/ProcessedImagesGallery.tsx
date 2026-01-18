@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { saveAs } from "file-saver";
 import JSZip from "jszip";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { useToastContext } from "../../hooks/useToast";
 import { FileSystemDirectoryHandle } from "./types/file-system.types";
 

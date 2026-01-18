@@ -63,13 +63,6 @@ function Footer() {
               </li>
               <li>
                 <a
-                  href="/data-editor"
-                  className="text-base text-gray-400 hover:text-white transition-colors">
-                  Data Editor
-                </a>
-              </li>
-              <li>
-                <a
                   href="/scrape-editor"
                   className="text-base text-gray-400 hover:text-white transition-colors">
                   Scraping

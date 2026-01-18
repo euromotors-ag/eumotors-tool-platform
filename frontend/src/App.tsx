@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
-import { Home, Image, Data, Scrape, Converter } from "./pages";
+import { Home, Image, Scrape, Converter, JsonEditor } from "./pages";
 import Layout from "./layout/Layout";
 import { DebugLogProvider } from "./contexts/DebugLogContext";
 import DebugTerminal from "./components/image-editor/DebugTerminal";
@@ -61,17 +61,6 @@ function AppContent() {
         />
 
         <Route
-          path="/data-editor"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Data />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
           path="/scrape-editor"
           element={
             <ProtectedRoute>
@@ -88,6 +77,17 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <Converter />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/json-editor"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <JsonEditor />
               </Layout>
             </ProtectedRoute>
           }
