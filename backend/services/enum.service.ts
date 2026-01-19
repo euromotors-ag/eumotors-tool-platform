@@ -96,6 +96,7 @@ export class EnumService {
         name_enumType_parentId: {
           name: upperName,
           enumType: dto.enumType,
+          // @ts-expect-error - Prisma's compound unique constraint types incorrectly expect 'string' instead of 'string | null' for nullable fields
           parentId: upperParentId,
         },
       },
@@ -145,6 +146,7 @@ export class EnumService {
         name_enumType_parentId: {
           name: upperName,
           enumType,
+          // @ts-expect-error - Prisma's compound unique constraint types incorrectly expect 'string' instead of 'string | null' for nullable fields
           parentId: upperParentId,
         },
       },

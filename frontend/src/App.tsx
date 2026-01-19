@@ -1,12 +1,20 @@
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
-import { Home, Image, Scrape, Converter, JsonEditor } from "./pages";
+import { lazy, Suspense } from "react";
 import Layout from "./layout/Layout";
 import { DebugLogProvider } from "./contexts/DebugLogContext";
 import DebugTerminal from "./components/image-editor/DebugTerminal";
 import { useDebugLog } from "./contexts/DebugLogContext";
 import CustomSignIn from "./components/CustomSignIn";
 import SSOCallback from "./components/SSOCallback";
+import LoadSpinner from "./components/ui/LoadSpinner";
+
+// Lazy load pages for code splitting
+const Home = lazy(() => import("./pages/Home").then(module => ({ default: module.default })));
+const Image = lazy(() => import("./pages/Image").then(module => ({ default: module.default })));
+const Scrape = lazy(() => import("./pages/Scrape").then(module => ({ default: module.default })));
+const Converter = lazy(() => import("./pages/Converter").then(module => ({ default: module.default })));
+const JsonEditor = lazy(() => import("./pages/JsonEditor").then(module => ({ default: module.JsonEditor })));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded } = useAuth();
@@ -14,7 +22,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!isLoaded) {
     return (
       <div className="bg-background min-h-screen flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent"></div>
+        <LoadSpinner />
       </div>
     );
   }
@@ -24,6 +32,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
+}
+
+function PageLoader() {
+  return (
+    <div className="bg-background min-h-screen flex items-center justify-center">
+      <LoadSpinner />
+    </div>
+  );
 }
 
 function AppContent() {
@@ -37,13 +53,15 @@ function AppContent() {
         <Route path="/sign-in" element={<CustomSignIn />} />
         <Route path="/sso-callback" element={<SSOCallback />} />
 
-        {/* Protected Routes */}
+        {/* Protected Routes - Lazy loaded with Suspense */}
         <Route
           path="/"
           element={
             <ProtectedRoute>
               <Layout>
-                <Home />
+                <Suspense fallback={<PageLoader />}>
+                  <Home />
+                </Suspense>
               </Layout>
             </ProtectedRoute>
           }
@@ -54,7 +72,9 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Layout>
-                <Image />
+                <Suspense fallback={<PageLoader />}>
+                  <Image />
+                </Suspense>
               </Layout>
             </ProtectedRoute>
           }
@@ -65,7 +85,9 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Layout>
-                <Scrape />
+                <Suspense fallback={<PageLoader />}>
+                  <Scrape />
+                </Suspense>
               </Layout>
             </ProtectedRoute>
           }
@@ -76,7 +98,9 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Layout>
-                <Converter />
+                <Suspense fallback={<PageLoader />}>
+                  <Converter />
+                </Suspense>
               </Layout>
             </ProtectedRoute>
           }
@@ -87,7 +111,9 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Layout>
-                <JsonEditor />
+                <Suspense fallback={<PageLoader />}>
+                  <JsonEditor />
+                </Suspense>
               </Layout>
             </ProtectedRoute>
           }

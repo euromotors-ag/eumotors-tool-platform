@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { useUser, useClerk } from "@clerk/clerk-react";
 import {
   ImageIcon,
-  FileTextIcon,
   GlobeIcon,
   MenuIcon,
   ExternalLinkIcon,
@@ -99,7 +98,7 @@ const Navbar = () => {
         },
         {
           title: "JSON Editor",
-          description: "Zero-lag JSON file editor with equipment validation",
+          description: "Edit and validate car JSON files",
           icon: <FileCode className="size-5 shrink-0" />,
           url: "/json-editor",
         },

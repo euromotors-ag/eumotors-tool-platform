@@ -40,6 +40,18 @@ let referenceRoutes: any;
   referenceRoutes = referenceModule.default;
 
   startServer();
+  
+  // Warm up equipment dictionary cache after server starts
+  // This reduces first request latency
+  const referenceServiceModule = await import("@services/reference.service.js");
+  if (referenceServiceModule.warmupEquipmentDictionaryCache) {
+    referenceServiceModule.warmupEquipmentDictionaryCache().catch((error) => {
+      // Silent fail - cache will be populated on first request
+      if (process.env.NODE_ENV === "development") {
+        console.warn("Cache warmup failed:", error);
+      }
+    });
+  }
 })();
 
 function startServer() {

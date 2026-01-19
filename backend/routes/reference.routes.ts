@@ -34,7 +34,9 @@ router.get("/equipment", async (req: Request, res: Response) => {
 
     // Set ETag header
     res.setHeader("ETag", data.checksum);
-    res.setHeader("Cache-Control", "public, max-age=600"); // 10 minutes
+    // HTTP cache TTL: Use conservative 2 minutes to match minimum server-side TTL
+    // Server-side cache uses adaptive TTL (2-5 min), but HTTP cache uses fixed 2 min for safety
+    res.setHeader("Cache-Control", "public, max-age=120"); // 2 minutes
 
     return res.json(data);
   } catch (error) {

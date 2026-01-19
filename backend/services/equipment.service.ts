@@ -1,5 +1,6 @@
 import { EquipmentBin } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
+import { invalidateEquipmentDictionaryCache } from "./reference.service.js";
 
 export interface EquipmentDto {
   name: string;
@@ -96,7 +97,7 @@ export class EquipmentService {
    */
   async createEquipment(dto: EquipmentDto): Promise<EquipmentResponse> {
     const upperName = dto.name.toUpperCase().trim();
-    return prisma.equipment.upsert({
+    const result = await prisma.equipment.upsert({
       where: { name: upperName },
       update: {
         binCategory: dto.binCategory,
@@ -111,6 +112,14 @@ export class EquipmentService {
         source: dto.source || "manual",
       },
     });
+
+    // Invalidate dictionary cache to ensure fresh data on next request
+    // Only invalidate if equipment is in bin_good (affects dictionary)
+    if (result.binCategory === "bin_good") {
+      invalidateEquipmentDictionaryCache();
+    }
+
+    return result;
   }
 
   /**

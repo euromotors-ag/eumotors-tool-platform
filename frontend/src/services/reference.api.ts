@@ -5,7 +5,8 @@
 import axios from "axios";
 import { Result, EquipmentDictionarySnapshot } from "../types/json-editor.types";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+// Use relative URL in dev (vite proxy handles it) or env var in production
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "" : "http://localhost:3000");
 
 /**
  * Fetch equipment dictionary with ETag support

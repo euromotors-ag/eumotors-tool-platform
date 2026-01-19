@@ -2,65 +2,40 @@
  * Action buttons for export, reset, etc.
  */
 
-import { Download, RotateCcw, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { useJsonEditorStore } from "../../stores/json-editor.store";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 export function EditorActions() {
-  const getWorkingJson = useJsonEditorStore((state) => state.getWorkingJson);
-  const resetToOriginal = useJsonEditorStore((state) => state.resetToOriginal);
-  const saveCurrentFile = useJsonEditorStore((state) => state.saveCurrentFile);
-  const isDirty = useJsonEditorStore((state) => state.isDirty());
-  const fileName = useJsonEditorStore((state) => state.fileName);
+  const markFileAsValid = useJsonEditorStore((state) => state.markFileAsValid);
+  const isDirtyFn = useJsonEditorStore((state) => state.isDirty);
   const activeFileName = useJsonEditorStore((state) => state.activeFileName);
-  const files = useJsonEditorStore((state) => state.files);
+  const originalJson = useJsonEditorStore((state) => state.originalJson);
+  const workingJson = useJsonEditorStore((state) => state.workingJson);
+  const originalHash = useJsonEditorStore((state) => state.originalHash);
+  const unknownEquipment = useJsonEditorStore((state) => state.unknownEquipment);
   const dictionaryVersion = useJsonEditorStore((state) => state.dictionaryVersion);
   const dictionaryFetchedAt = useJsonEditorStore((state) => state.dictionaryFetchedAt);
-  const [isSaving, setIsSaving] = useState(false);
   
-  // Memoize file list to prevent infinite loops
-  const fileList = useMemo(() => {
-    const list: Array<{ fileName: string; isSaved: boolean; isActive: boolean }> = [];
-    files.forEach((fileData, fileName) => {
-      list.push({
-        fileName,
-        isSaved: fileData.isSaved,
-        isActive: activeFileName === fileName,
-      });
-    });
-    return list.sort((a, b) => a.fileName.localeCompare(b.fileName));
-  }, [files, activeFileName]);
-
-  const handleExport = () => {
-    const json = getWorkingJson();
-    if (!json) return;
-
-    const jsonString = JSON.stringify(json, null, 2);
-    const blob = new Blob([jsonString], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName || "car-data.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleSave = async () => {
+  // Compute isDirty reactively based on state changes
+  const isDirty = useMemo(() => {
+    return isDirtyFn();
+  }, [isDirtyFn, originalJson, workingJson, originalHash]);
+  
+  const handleSave = () => {
     if (!activeFileName) return;
     
-    setIsSaving(true);
-    try {
-      await saveCurrentFile();
-    } catch (error) {
-      alert(`Failed to save: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setIsSaving(false);
-    }
+    // Mark current file as valid (no unknown equipment)
+    // This will check unknownEquipment and set isValid accordingly
+    markFileAsValid(activeFileName);
+    
+    // Scroll to top after React updates the DOM (but don't change file)
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
   };
 
-  const hasUnsavedFiles = isDirty && activeFileName !== null;
+  const hasUnknownEquipment = unknownEquipment.length > 0;
 
   const lastFetchTime = useMemo(() => {
     if (!dictionaryFetchedAt) return null;
@@ -70,30 +45,14 @@ export function EditorActions() {
   return (
     <div className="flex items-center justify-between border-t border-gray-200 pt-4">
       <div className="flex items-center gap-3">
-        {fileList.length > 1 && (
-          <button
-            onClick={handleSave}
-            disabled={!hasUnsavedFiles || isSaving}
-            className="px-3 py-1.5 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all">
-            <Save className="h-3 w-3" />
-            {isSaving ? "Saving..." : "Save"}
-          </button>
-        )}
-        
+        {/* Always show "Save" button */}
         <button
-          onClick={handleExport}
-          disabled={!getWorkingJson()}
-          className="px-3 py-1.5 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all">
-          <Download className="h-3 w-3" />
-          Export JSON
-        </button>
-
-        <button
-          onClick={resetToOriginal}
-          disabled={!isDirty}
-          className="px-3 py-1.5 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all">
-          <RotateCcw className="h-3 w-3" />
-          Reset
+          onClick={handleSave}
+          disabled={hasUnknownEquipment || !activeFileName}
+          className="px-3 py-1.5 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all"
+          title={hasUnknownEquipment ? "Please handle all unknown equipment before saving" : "Save this file and mark as complete"}>
+          <Save className="h-3 w-3" />
+          Save
         </button>
 
         {isDirty && (

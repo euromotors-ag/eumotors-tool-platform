@@ -113,6 +113,7 @@ export interface EquipmentDictionarySnapshot {
   version: string;
   checksum: string;
   itemsByCode: Record<string, EquipmentItem>;
+  mappingsByRawValue?: Record<string, string>; // Maps raw value (uppercase) to canonical code
   fetchedAt: number;
   stale?: boolean;
 }

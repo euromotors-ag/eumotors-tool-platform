@@ -241,25 +241,41 @@ export function FileDropZone({
       const directoryHandle = await (window as any).showDirectoryPicker();
       const files: File[] = [];
 
-      for await (const entry of directoryHandle.values()) {
-        if (entry.kind === "file") {
-          const file = await (entry as any).getFile();
-          // Filter by accept pattern if specified
-          const acceptPattern =
-            accept === "*"
-              ? null
-              : new RegExp(
-                  accept
-                    .split(",")
-                    .map((a) => a.trim().replace(/\./g, "\\."))
-                    .join("|"),
-                  "i"
-                );
-          if (!acceptPattern || file.name.match(acceptPattern)) {
-            files.push(file);
+      // Recursively traverse directory structure and preserve relative paths
+      const acceptPattern =
+        accept === "*"
+          ? null
+          : new RegExp(
+              accept
+                .split(",")
+                .map((a) => a.trim().replace(/\./g, "\\."))
+                .join("|"),
+              "i"
+            );
+
+      const traverseDirectory = async (
+        dirHandle: any,
+        relativePath: string = ""
+      ): Promise<void> => {
+        for await (const entry of dirHandle.values()) {
+          const entryPath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+
+          if (entry.kind === "file") {
+            const file = await entry.getFile();
+            if (!acceptPattern || file.name.match(acceptPattern)) {
+              // Store relative path as custom property (webkitRelativePath is read-only)
+              // Use a different property name that we control
+              (file as any).__relativePath = entryPath;
+              files.push(file);
+            }
+          } else if (entry.kind === "directory") {
+            // Recursively traverse subdirectories
+            await traverseDirectory(entry, entryPath);
           }
         }
-      }
+      };
+
+      await traverseDirectory(directoryHandle);
 
       if (files.length > 0) {
         try {

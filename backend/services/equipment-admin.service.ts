@@ -5,6 +5,7 @@ import {
   EquipmentNormalizationService,
   equipmentNormalizationService,
 } from "./equipment-normalization.service.js";
+import { invalidateEquipmentDictionaryCache } from "./reference.service.js";
 
 /**
  * Equipment Admin Service
@@ -69,6 +70,9 @@ export class EquipmentAdminService {
         },
       });
 
+      // Invalidate dictionary cache to ensure fresh data on next request
+      invalidateEquipmentDictionaryCache();
+
       return {
         rawValue: upperRawValue,
         status: "GREEN",
@@ -99,6 +103,9 @@ export class EquipmentAdminService {
         createdBy: createdBy || null,
       },
     });
+
+    // Invalidate dictionary cache to ensure fresh data on next request
+    invalidateEquipmentDictionaryCache();
 
     return {
       rawValue: upperRawValue,
@@ -158,6 +165,9 @@ export class EquipmentAdminService {
         createdBy: createdBy || null,
       },
     });
+
+    // Invalidate dictionary cache to ensure fresh data on next request
+    invalidateEquipmentDictionaryCache();
 
     return {
       rawValue: upperRawValue,
@@ -222,6 +232,9 @@ export class EquipmentAdminService {
         where: { equipmentId: existingGood.id },
       });
 
+      // Invalidate dictionary cache to ensure fresh data on next request
+      invalidateEquipmentDictionaryCache();
+
       return {
         rawValue: upperRawValue,
         status: "RED",
@@ -237,6 +250,9 @@ export class EquipmentAdminService {
         createdBy: createdBy || null,
       },
     });
+
+    // Invalidate dictionary cache to ensure fresh data on next request
+    invalidateEquipmentDictionaryCache();
 
     return {
       rawValue: upperRawValue,

@@ -23,7 +23,12 @@ export function JsonEditor() {
   // Update dictionary info in store
   useEffect(() => {
     if (dictionary) {
-      setDictionaryInfo(dictionary.version, dictionary.fetchedAt, dictionary.itemsByCode);
+      setDictionaryInfo(
+        dictionary.version,
+        dictionary.fetchedAt,
+        dictionary.itemsByCode,
+        dictionary.mappingsByRawValue
+      );
     }
   }, [dictionary, setDictionaryInfo]);
 
@@ -34,76 +39,68 @@ export function JsonEditor() {
     }
   }, [dictionary, workingJson?.equipment, validateEquipment]);
 
-  if (isLoading) {
-    return (
-      <div className="bg-background text-foreground min-h-screen py-8">
-        <PageContainer>
-          <div className="flex items-center justify-center min-h-[400px]">
-            <LoadSpinner />
-          </div>
-        </PageContainer>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-background text-foreground min-h-screen py-8">
-        <PageContainer>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800">
-              Failed to load equipment dictionary: {error.message}
-            </p>
-          </div>
-        </PageContainer>
-      </div>
-    );
-  }
-
-  if (!dictionary) {
-    return (
-      <div className="bg-background text-foreground min-h-screen py-8">
-        <PageContainer>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-yellow-800">
-              Equipment dictionary not available. Please refresh the page.
-            </p>
-          </div>
-        </PageContainer>
-      </div>
-    );
-  }
+  // Show loading spinner only for initial load (not when using cached data)
+  const isInitialLoad = isLoading && !dictionary && !error;
 
   return (
     <div className="bg-background text-foreground min-h-screen py-8">
       <PageContainer>
         <h1 className="text-3xl font-bold mb-6">JSON Editor</h1>
         <p className="text-muted-foreground mb-6">
-          Upload, edit, and validate car JSON files with zero-lag performance
+          Upload, edit, and validate car JSON files
         </p>
 
-        <div className="max-w-6xl mx-auto space-y-6">
-
-        {/* File Upload */}
-        <FileUpload />
-
-        {/* File List - Shows all loaded files */}
-        <FileList />
-
-        {/* Main Editor */}
-        {workingJson && (
-          <div className="space-y-6">
-            {/* JSON Fields Panel - Shows all fields with dropdowns */}
-            <JsonFieldsPanel />
-
-            {/* Equipment Section - Single section with validation */}
-            <EquipmentSection dictionary={dictionary.itemsByCode} />
+        {/* Show warning if dictionary failed to load but allow UI to work */}
+        {error && !dictionary && (
+          <div className="mb-4 bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-3">
+            <p className="text-yellow-300 text-sm">
+              ⚠️ Warning: Could not connect to backend server. Equipment validation may be limited. 
+              {error.message.includes("CONNECTION_REFUSED") && (
+                <span className="block mt-1 text-xs text-yellow-400">
+                  Make sure the backend server is running on port 3001.
+                </span>
+              )}
+            </p>
           </div>
         )}
 
-          {/* Actions */}
-          {workingJson && <EditorActions />}
-        </div>
+        {/* Show info if using stale/cached data */}
+        {dictionary?.stale && (
+          <div className="mb-4 bg-blue-500/10 border border-blue-500/50 rounded-lg p-3">
+            <p className="text-blue-300 text-sm">
+              ℹ️ Using cached equipment dictionary. Some features may be limited.
+            </p>
+          </div>
+        )}
+
+        {/* Show loading spinner only on initial load */}
+        {isInitialLoad ? (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <LoadSpinner />
+          </div>
+        ) : (
+          <div className="max-w-6xl mx-auto space-y-6">
+            {/* File Upload */}
+            <FileUpload />
+
+            {/* File List - Shows all loaded files */}
+            <FileList />
+
+            {/* Main Editor */}
+            {workingJson && (
+              <div className="space-y-6">
+                {/* JSON Fields Panel - Shows all fields with dropdowns */}
+                <JsonFieldsPanel />
+
+                {/* Equipment Section - Single section with validation */}
+                <EquipmentSection dictionary={dictionary?.itemsByCode || {}} />
+              </div>
+            )}
+
+            {/* Actions */}
+            {workingJson && <EditorActions />}
+          </div>
+        )}
       </PageContainer>
     </div>
   );

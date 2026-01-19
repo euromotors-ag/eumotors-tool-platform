@@ -286,10 +286,22 @@ export function JsonFieldsPanel() {
         <Section title="Basic Information" color="blue">
           <div className="flex flex-col space-y-2">
             {getFieldValue("id") !== undefined && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-300 whitespace-nowrap min-w-[130px]">
+                  ID:
+                </label>
+                <div className="flex-1 min-w-0">
+                  <div className="px-1.5 py-1 text-xs border border-gray-600 rounded bg-gray-800/50 text-gray-400 font-mono truncate">
+                    {String(getFieldValue("id") || "")}
+                  </div>
+                </div>
+              </div>
+            )}
+            {getFieldValue("vin") !== undefined && (
               <FieldRow
-                label="ID"
-                value={getFieldValue("id")}
-                onChange={(val) => setFieldValue("id", val)}
+                label="VIN"
+                value={getFieldValue("vin")}
+                onChange={(val) => setFieldValue("vin", val)}
                 Input={StringInput}
               />
             )}

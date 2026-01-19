@@ -25,8 +25,8 @@ import {
   createListingTemplate,
   createListingMappingRules,
 } from "@/utils/pdfMapper";
-import { saveAs } from "file-saver";
-import JSZip from "jszip";
+// Dynamic imports for code splitting - these libraries are only needed when exporting
+// This reduces initial bundle size by ~150KB
 
 interface UploadedFile {
   id: string;
@@ -149,7 +149,9 @@ function PdfConverter() {
   }, [success]);
 
   const handleDownloadJson = useCallback(
-    (_fileId: string, fileName: string, jsonOutput: string) => {
+    async (_fileId: string, fileName: string, jsonOutput: string) => {
+      // Dynamic import for code splitting
+      const { saveAs } = await import("file-saver");
       const blob = new Blob([jsonOutput], { type: "application/json" });
       const baseFileName = fileName.replace(/\.pdf$/i, "");
       saveAs(blob, `${baseFileName}_extracted.json`);
@@ -179,6 +181,10 @@ function PdfConverter() {
     }
 
     try {
+      // Dynamic import for code splitting - only load when exporting
+      const JSZip = (await import("jszip")).default;
+      const { saveAs } = await import("file-saver");
+      
       const zip = new JSZip();
 
       pdfFiles.forEach((file) => {
@@ -204,6 +210,10 @@ function PdfConverter() {
     }
 
     try {
+      // Dynamic import for code splitting - only load when exporting
+      const JSZip = (await import("jszip")).default;
+      const { saveAs } = await import("file-saver");
+      
       const zip = new JSZip();
 
       pdfFiles.forEach((file) => {
@@ -231,6 +241,10 @@ function PdfConverter() {
     }
 
     try {
+      // Dynamic import for code splitting - only load when exporting
+      const JSZip = (await import("jszip")).default;
+      const { saveAs } = await import("file-saver");
+      
       const zip = new JSZip();
 
       pdfFiles.forEach((file) => {

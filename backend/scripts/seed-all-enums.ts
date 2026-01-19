@@ -12,6 +12,7 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 import { CarEnumType } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { equipmentNormalizationService } from "../services/equipment-normalization.service.js";
+// @ts-expect-error - This file may not exist during build, but is required for seeding script
 import {
   EQUIPMENT_ITEM_GOOD_OPTIONS,
   EQUIPMENT_ITEM_TRASH_OPTIONS,
@@ -92,7 +93,7 @@ async function seedAllEnums() {
 
   // Seed Body Types
   console.log("Seeding body types...");
-  const bodyTypes = BODY_TYPE_OPTIONS.map((name) => ({
+  const bodyTypes = BODY_TYPE_OPTIONS.map((name: string) => ({
     name: name.toUpperCase().trim(),
     enumType: "body_type" as CarEnumType,
     source: "enum",
@@ -105,7 +106,7 @@ async function seedAllEnums() {
 
   // Seed Fuel Types
   console.log("Seeding fuel types...");
-  const fuelTypes = FUEL_TYPE_OPTIONS.map((name) => ({
+  const fuelTypes = FUEL_TYPE_OPTIONS.map((name: string) => ({
     name: name.toUpperCase().trim(),
     enumType: "fuel_type" as CarEnumType,
     source: "enum",
@@ -118,7 +119,7 @@ async function seedAllEnums() {
 
   // Seed Drive Types
   console.log("Seeding drive types...");
-  const driveTypes = DRIVE_TYPE_OPTIONS.map((name) => ({
+  const driveTypes = DRIVE_TYPE_OPTIONS.map((name: string) => ({
     name: name.toUpperCase().trim(),
     enumType: "drive_type" as CarEnumType,
     source: "enum",
@@ -131,7 +132,7 @@ async function seedAllEnums() {
 
   // Seed Transmission Types
   console.log("Seeding transmission types...");
-  const transmissionTypes = TRANSMISSION_TYPE_OPTIONS.map((name) => ({
+  const transmissionTypes = TRANSMISSION_TYPE_OPTIONS.map((name: string) => ({
     name: name.toUpperCase().trim(),
     enumType: "transmission_type" as CarEnumType,
     source: "enum",
@@ -144,7 +145,7 @@ async function seedAllEnums() {
 
   // Seed Colors
   console.log("Seeding colors...");
-  const colors = COLOR_OPTIONS.map((name) => ({
+  const colors = COLOR_OPTIONS.map((name: string) => ({
     name: name.toUpperCase().trim(),
     enumType: "color" as CarEnumType,
     source: "enum",
@@ -157,7 +158,7 @@ async function seedAllEnums() {
 
   // Seed Interior Materials
   console.log("Seeding interior materials...");
-  const interiorMaterials = INTERIOR_MATERIAL_OPTIONS.map((name) => ({
+  const interiorMaterials = INTERIOR_MATERIAL_OPTIONS.map((name: string) => ({
     name: name.toUpperCase().trim(),
     enumType: "interior_material" as CarEnumType,
     source: "enum",
@@ -170,7 +171,7 @@ async function seedAllEnums() {
 
   // Seed Brands
   console.log("Seeding brands...");
-  const brands = BRAND_OPTIONS.map((name) => ({
+  const brands = BRAND_OPTIONS.map((name: string) => ({
     name: name.toUpperCase().trim(),
     enumType: "brand" as CarEnumType,
     source: "enum",
@@ -191,7 +192,8 @@ async function seedAllEnums() {
   }> = [];
 
   for (const [brand, models] of Object.entries(MODEL_OPTIONS)) {
-    for (const model of models) {
+    const modelArray = Array.isArray(models) ? models : [];
+    for (const model of modelArray) {
       modelEntries.push({
         name: model.toUpperCase().trim(),
         enumType: "model" as CarEnumType,
@@ -209,7 +211,7 @@ async function seedAllEnums() {
 
   // Seed Energy Efficiency
   console.log("Seeding energy efficiency...");
-  const energyEfficiency = ENERGY_EFFICIENCY_OPTIONS.map((name) => ({
+  const energyEfficiency = ENERGY_EFFICIENCY_OPTIONS.map((name: string) => ({
     name: name.toUpperCase().trim(),
     enumType: "energy_efficiency" as CarEnumType,
     source: "enum",
@@ -222,7 +224,7 @@ async function seedAllEnums() {
 
   // Seed Euro Norms
   console.log("Seeding euro norms...");
-  const euroNorms = EURO_NORM_OPTIONS.map((name) => ({
+  const euroNorms = EURO_NORM_OPTIONS.map((name: string) => ({
     name: name.toUpperCase().trim(),
     enumType: "euro_norm" as CarEnumType,
     source: "enum",
@@ -235,7 +237,7 @@ async function seedAllEnums() {
 
   // Seed Currencies
   console.log("Seeding currencies...");
-  const currencies = CURRENCY_OPTIONS.map((name) => ({
+  const currencies = CURRENCY_OPTIONS.map((name: string) => ({
     name: name.toUpperCase().trim(),
     enumType: "currency" as CarEnumType,
     source: "enum",

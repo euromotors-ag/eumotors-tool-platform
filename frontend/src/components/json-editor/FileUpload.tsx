@@ -169,7 +169,18 @@ export function FileUpload() {
       // Process all files in parallel
       const filePromises = jsonFiles.map(processJsonFile);
       const results = await Promise.all(filePromises);
-      const validFiles = results.filter((f): f is { name: string; json: CarJson } => f !== null);
+      
+      // Extract relative paths from File objects if available (from folder selection)
+      const validFiles = results
+        .map((result, index) => {
+          if (!result) return null;
+          const file = jsonFiles[index];
+          // File objects from folder selection via showDirectoryPicker have __relativePath property
+          // File objects from folder input have webkitRelativePath property (read-only)
+          const relativePath = (file as any).__relativePath || (file as any).webkitRelativePath || undefined;
+          return { ...result, relativePath };
+        })
+        .filter((f): f is { name: string; json: CarJson; relativePath?: string } => f !== null);
 
       if (validFiles.length > 0) {
         if (validFiles.length === 1) {
