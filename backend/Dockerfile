@@ -2,6 +2,8 @@ FROM node:22.12-slim AS build
 WORKDIR /app
 
 COPY package*.json ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./
 RUN npm ci
 COPY . .
 # Generate Prisma Client before building (required for TypeScript compilation)

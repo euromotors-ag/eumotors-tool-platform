@@ -1,4 +1,6 @@
-export const BASE_URL = import.meta.env.VITE_API_URL || "";
+import { API_BASE_URL } from "./api-base-url";
+
+export const BASE_URL = API_BASE_URL;
 
 const IMAGE_PROCESS_ENDPOINT =
   import.meta.env.VITE_IMAGE_PROCESS_ENDPOINT || "";

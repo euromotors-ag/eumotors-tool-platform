@@ -57,7 +57,8 @@ export function JsonEditor() {
               ⚠️ Warning: Could not connect to backend server. Equipment validation may be limited. 
               {error.message.includes("CONNECTION_REFUSED") && (
                 <span className="block mt-1 text-xs text-yellow-400">
-                  Make sure the backend server is running on port 3001.
+                  Make sure the backend URL is reachable and `VITE_API_BASE_URL`
+                  (or `VITE_API_URL`) is set in production.
                 </span>
               )}
             </p>

@@ -205,7 +205,7 @@ const Navbar = () => {
                     </span>
                   </a>
                   <a
-                    href="https://drive.google.com/file/d/13bfbljPRq3zzcPbNOIWFyEJokt5OLIXf/view?usp=drive_link"
+                    href="https://drive.google.com/file/d/1vKr1_vuKCR-9lnYVSdYURPBE0_g5EedK/view?usp=drive_link"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors group cursor-pointer">

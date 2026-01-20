@@ -1,0 +1,28 @@
+name: Render Keepalive
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend during business hours
+        env:
+          TZ: Europe/Stockholm
+          HEALTHCHECK_URL: ${{ secrets.RENDER_HEALTHCHECK_URL }}
+        run: |
+          if [ -z "$HEALTHCHECK_URL" ]; then
+            echo "Missing secret: RENDER_HEALTHCHECK_URL"
+            exit 1
+          fi
+
+          hour=$(date +%H)
+          if [ "$hour" -ge 8 ] && [ "$hour" -lt 18 ]; then
+            echo "Pinging $HEALTHCHECK_URL at $(date)"
+            curl -fsS "$HEALTHCHECK_URL" > /dev/null
+          else
+            echo "Outside active hours, skipping ping at $(date)"
+          fi

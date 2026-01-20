@@ -116,10 +116,11 @@ frontend/
 3. **Environment Setup**
 
    ```bash
-   # Create .env file in frontend/
-   cp .env.example .env
-
-   # ... other credentials
+   # Create .env file in frontend/ (example values)
+   VITE_API_BASE_URL=https://api.your-domain.com
+   VITE_API_URL=https://api.your-domain.com
+   VITE_IMAGE_PROCESS_ENDPOINT=/api/v1/images
+   VITE_SCRAPE_ENDPOINT=/api/v1/scrape
    ```
 
 4. **Start Development**
