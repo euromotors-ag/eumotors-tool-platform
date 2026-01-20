@@ -83,48 +83,48 @@ export function FileUpload() {
       ) {
         const resultObj = value as { type: string; value?: unknown };
         
-        // Only extract value if type is "ok"
-        if (resultObj.type === "ok" && "value" in resultObj) {
-          const resultValue = resultObj.value;
-          
-          // Handle equipment array with nested Results
-          if (key === "equipment" && Array.isArray(resultValue)) {
-            result[key] = resultValue
-              .map((item) => {
-                if (typeof item === "object" && item !== null && "type" in item) {
-                  const itemResult = item as { type: string; value?: unknown };
-                  if (itemResult.type === "ok" && "value" in itemResult) {
-                    return itemResult.value;
-                  } else if (itemResult.type === "err") {
-                    // For err items, preserve the value if it exists, otherwise use empty string
-                    // This will mark them as "unknown" during validation
-                    if ("value" in itemResult && itemResult.value !== undefined && itemResult.value !== null) {
-                      return String(itemResult.value);
-                    }
-                    // If no value, skip it
-                    return null;
+        const resultValue = resultObj.value;
+
+        // Always try to extract equipment list, even if type is "err"
+        if (key === "equipment" && Array.isArray(resultValue)) {
+          result[key] = resultValue
+            .map((item) => {
+              if (typeof item === "object" && item !== null && "type" in item) {
+                const itemResult = item as { type: string; value?: unknown };
+                if (itemResult.type === "ok" && "value" in itemResult) {
+                  return itemResult.value;
+                }
+                if (itemResult.type === "err") {
+                  if (
+                    "value" in itemResult &&
+                    itemResult.value !== undefined &&
+                    itemResult.value !== null
+                  ) {
+                    return String(itemResult.value);
                   }
                   return null;
                 }
-                // If it's already a string, keep it
-                if (typeof item === "string") {
-                  return item;
-                }
                 return null;
-              })
-              .filter((item): item is string => typeof item === "string");
-          }
-          // Handle registration_date array: [year, month, day]
-          else if (key === "registration_date" && Array.isArray(resultValue)) {
-            result[key] = resultValue;
-          }
-          else {
-            result[key] = resultValue;
-          }
+              }
+              if (typeof item === "string") {
+                return item;
+              }
+              return null;
+            })
+            .filter((item): item is string => typeof item === "string");
+          continue;
         }
-        // If type is "err", skip or set to undefined
-        else {
-          // Skip error values for now
+
+        // Only extract other values if type is "ok"
+        if (resultObj.type === "ok" && "value" in resultObj) {
+          // Handle registration_date array: [year, month, day]
+          if (key === "registration_date" && Array.isArray(resultValue)) {
+            result[key] = resultValue;
+          } else {
+            result[key] = resultValue;
+          }
+        } else {
+          // Skip error values for other fields
           continue;
         }
       }

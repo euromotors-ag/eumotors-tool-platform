@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import {
   FileIcon,
-  UploadIcon,
   DownloadIcon,
   XIcon,
   FileTextIcon,
@@ -104,35 +103,36 @@ function PdfConverter() {
 
   const processFiles = useCallback(
     async (files: File[]) => {
-      const newFiles: UploadedFile[] = Array.from(files).map((file) => {
-        const isPdf =
+      const pdfFiles = Array.from(files).filter(
+        (file) =>
           file.type === "application/pdf" ||
-          file.name.toLowerCase().endsWith(".pdf");
-        let preview: string | undefined;
+          file.name.toLowerCase().endsWith(".pdf")
+      );
 
-        if (!isPdf && file.type.startsWith("image/")) {
-          preview = URL.createObjectURL(file);
-        }
+      const rejectedCount = files.length - pdfFiles.length;
+      if (rejectedCount > 0) {
+        errorToast("Only PDF files are supported in the PDF Converter.");
+      }
 
-        return {
-          id: `${Date.now()}-${Math.random()}`,
-          file,
-          preview,
-          isPdf,
-        };
-      });
+      if (pdfFiles.length === 0) {
+        return;
+      }
+
+      const newFiles: UploadedFile[] = pdfFiles.map((file) => ({
+        id: `${Date.now()}-${Math.random()}`,
+        file,
+        isPdf: true,
+      }));
 
       setUploadedFiles((prev) => [...prev, ...newFiles]);
       // Toast will be shown by FileDropZone's onFilesLoaded/onFolderLoaded callbacks
 
       // Automatically extract text from PDF files
       for (const newFile of newFiles) {
-        if (newFile.isPdf) {
-          await extractPdfText(newFile.id, newFile.file);
-        }
+        await extractPdfText(newFile.id, newFile.file);
       }
     },
-    [extractPdfText]
+    [extractPdfText, errorToast]
   );
 
   const handleRemoveFile = useCallback(
@@ -149,12 +149,21 @@ function PdfConverter() {
   }, [success]);
 
   const handleDownloadJson = useCallback(
-    async (_fileId: string, fileName: string, jsonOutput: string) => {
+    async (
+      _fileId: string,
+      fileName: string,
+      jsonOutput: string,
+      outputType: "mapped" | "raw"
+    ) => {
       // Dynamic import for code splitting
       const { saveAs } = await import("file-saver");
       const blob = new Blob([jsonOutput], { type: "application/json" });
       const baseFileName = fileName.replace(/\.pdf$/i, "");
-      saveAs(blob, `${baseFileName}_extracted.json`);
+      const outputFileName =
+        outputType === "mapped"
+          ? `${baseFileName}.json`
+          : `${baseFileName}-raw.json`;
+      saveAs(blob, outputFileName);
       success("JSON file downloaded successfully");
     },
     [success]
@@ -189,7 +198,7 @@ function PdfConverter() {
 
       pdfFiles.forEach((file) => {
         const baseFileName = file.file.name.replace(/\.pdf$/i, "");
-        zip.file(`${baseFileName}_mapped.json`, file.mappedJson!);
+        zip.file(`${baseFileName}.json`, file.mappedJson!);
       });
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -218,7 +227,7 @@ function PdfConverter() {
 
       pdfFiles.forEach((file) => {
         const baseFileName = file.file.name.replace(/\.pdf$/i, "");
-        zip.file(`${baseFileName}_raw.json`, file.jsonOutput!);
+        zip.file(`${baseFileName}-raw.json`, file.jsonOutput!);
       });
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -250,10 +259,10 @@ function PdfConverter() {
       pdfFiles.forEach((file) => {
         const baseFileName = file.file.name.replace(/\.pdf$/i, "");
         if (file.mappedJson) {
-          zip.file(`${baseFileName}_mapped.json`, file.mappedJson);
+          zip.file(`${baseFileName}.json`, file.mappedJson);
         }
         if (file.jsonOutput) {
-          zip.file(`${baseFileName}_raw.json`, file.jsonOutput);
+          zip.file(`${baseFileName}-raw.json`, file.jsonOutput);
         }
       });
 
@@ -435,11 +444,11 @@ function PdfConverter() {
         onFolderLoaded={(count) =>
           success(`Folder loaded: ${count} file(s) found`)}
         onError={(error) => errorToast(error)}
-        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+        accept=".pdf"
         multiple={true}
         isLoading={false}
         title="Drag and drop files here, or click to select"
-        description="Currently supports PDF files"
+        description="Only PDF files are supported"
         buttonText="Choose Files"
         showFolderOption={true}
       />
@@ -494,7 +503,7 @@ function PdfConverter() {
             {uploadedFiles.map((uploadedFile) => (
               <div key={uploadedFile.id} className="space-y-3">
                 <div className="flex items-center gap-4 p-4 bg-muted/50 border border-border rounded-lg hover:bg-accent/50 transition-colors">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <div className="rounded-lg bg-background p-2 border border-border">
                       {uploadedFile.isPdf ? (
                         <FileTextIcon className="size-5 text-red-500" />
@@ -527,7 +536,7 @@ function PdfConverter() {
                     size="icon"
                     onClick={() => handleRemoveFile(uploadedFile.id)}
                     disabled={extractingPdf === uploadedFile.id}
-                    className="flex-shrink-0 hover:bg-destructive/10 hover:text-destructive">
+                    className="shrink-0 hover:bg-destructive/10 hover:text-destructive">
                     <XIcon className="size-4" />
                   </Button>
                 </div>
@@ -616,7 +625,8 @@ function PdfConverter() {
                                 handleDownloadJson(
                                   uploadedFile.id,
                                   uploadedFile.file.name,
-                                  uploadedFile.mappedJson!
+                                  uploadedFile.mappedJson!,
+                                  "mapped"
                                 )
                               }
                               className="h-8">
@@ -658,7 +668,8 @@ function PdfConverter() {
                               handleDownloadJson(
                                 uploadedFile.id,
                                 uploadedFile.file.name,
-                                uploadedFile.jsonOutput!
+                                  uploadedFile.jsonOutput!,
+                                  "raw"
                               )
                             }
                             className="h-8">
