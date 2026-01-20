@@ -420,7 +420,7 @@ export function JsonFieldsPanel() {
             )}
             {getFieldValue("fuel_consumption_l_100km") !== undefined && (
               <FieldRow
-                label="Fuel Consumption (l/100km)"
+                label="Fuel Cons (l/100km)"
                 value={getFieldValue("fuel_consumption_l_100km")}
                 onChange={(val) => setFieldValue("fuel_consumption_l_100km", val)}
                 Input={NumberInput}

@@ -4,7 +4,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { CheckCircle2, Circle, FileText, Download } from "lucide-react";
+import { CheckCircle2, Circle, FileText, Download, Trash2 } from "lucide-react";
 import { useJsonEditorStore } from "../../stores/json-editor.store";
 
 export function FileList() {
@@ -13,6 +13,7 @@ export function FileList() {
   const setActiveFile = useJsonEditorStore((state) => state.setActiveFile);
   const exportAllAsZip = useJsonEditorStore((state) => state.exportAllAsZip);
   const areAllFilesValid = useJsonEditorStore((state) => state.areAllFilesValid);
+  const clearAllFiles = useJsonEditorStore((state) => state.clearAllFiles);
   const [isExporting, setIsExporting] = useState(false);
   
   // Memoize file list to prevent infinite loops
@@ -55,13 +56,21 @@ export function FileList() {
         </h3>
         {/* Show "Download all" button when all files are valid */}
         {allFilesValid && (
-          <button
-            onClick={handleDownloadAll}
-            disabled={isExporting}
-            className="px-3 py-1.5 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all">
-            <Download className="h-3 w-3" />
-            {isExporting ? "Exporting..." : "Download all"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadAll}
+              disabled={isExporting}
+              className="px-3 py-1.5 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all">
+              <Download className="h-3 w-3" />
+              {isExporting ? "Exporting..." : "Download all"}
+            </button>
+            <button
+              onClick={clearAllFiles}
+              className="px-3 py-1.5 text-xs bg-gray-700 text-gray-200 rounded hover:bg-gray-600 flex items-center gap-1.5 transition-all">
+              <Trash2 className="h-3 w-3" />
+              Clear all
+            </button>
+          </div>
         )}
       </div>
       <div className="flex flex-wrap gap-2">

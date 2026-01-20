@@ -15,6 +15,8 @@ const Image = lazy(() => import("./pages/Image").then(module => ({ default: modu
 const Scrape = lazy(() => import("./pages/Scrape").then(module => ({ default: module.default })));
 const Converter = lazy(() => import("./pages/Converter").then(module => ({ default: module.default })));
 const JsonEditor = lazy(() => import("./pages/JsonEditor").then(module => ({ default: module.JsonEditor })));
+const DatabaseUpload = lazy(() => import("./pages/DatabaseUpload").then(module => ({ default: module.default })));
+const DatabaseSearch = lazy(() => import("./pages/DatabaseSearch").then(module => ({ default: module.default })));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded } = useAuth();
@@ -113,6 +115,32 @@ function AppContent() {
               <Layout>
                 <Suspense fallback={<PageLoader />}>
                   <JsonEditor />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/database/upload"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Suspense fallback={<PageLoader />}>
+                  <DatabaseUpload />
+                </Suspense>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/database/search"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Suspense fallback={<PageLoader />}>
+                  <DatabaseSearch />
                 </Suspense>
               </Layout>
             </ProtectedRoute>

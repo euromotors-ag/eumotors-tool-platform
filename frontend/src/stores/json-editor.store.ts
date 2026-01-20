@@ -69,6 +69,7 @@ interface JsonEditorState {
   removeEquipment: (code: string) => void;
   mapEquipment: (oldCode: string, newCode: string) => void;
   resetToOriginal: () => void;
+  clearAllFiles: () => void;
   saveCurrentFile: () => Promise<void>;
   markFileAsSaved: (fileName: string) => void;
   markFileAsValid: (fileName: string) => void;
@@ -347,34 +348,22 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
 
     const hash = computeHash(normalizedJson);
 
-    // If multi-file mode, add to files map
-    if (state.files.size > 0) {
-      const fileData: FileData = {
-        fileName,
-        originalJson: normalizedJson,
-        workingJson: normalizedJson,
-        originalHash: hash,
-        patches: [],
-        validationState: {},
-        unknownEquipment: [],
-        isSaved: false,
-        isValid: false,
-      };
-      state.files.set(fileName, fileData);
-      set({ files: new Map(state.files), activeFileName: fileName });
-      get().setActiveFile(fileName);
-    } else {
-      // Single file mode (backward compatibility)
-      set({
-        originalJson: normalizedJson,
-        workingJson: normalizedJson,
-        originalHash: hash,
-        fileName,
-        patches: [],
-        validationState: {},
-        unknownEquipment: [],
-      });
-    }
+    const fileData: FileData = {
+      fileName,
+      originalJson: normalizedJson,
+      workingJson: normalizedJson,
+      originalHash: hash,
+      patches: [],
+      validationState: {},
+      unknownEquipment: [],
+      isSaved: false,
+      isValid: false,
+    };
+
+    const filesMap = new Map<string, FileData>();
+    filesMap.set(fileName, fileData);
+    set({ files: filesMap, activeFileName: fileName });
+    get().setActiveFile(fileName);
   },
 
   updateEquipment: (equipment: string[]) => {
@@ -594,6 +583,24 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
         unknownEquipment: [],
       });
     }
+  },
+  clearAllFiles: () => {
+    set({
+      files: new Map(),
+      activeFileName: null,
+      originalJson: null,
+      workingJson: null,
+      originalHash: null,
+      fileName: null,
+      patches: [],
+      validationState: {},
+      unknownEquipment: [],
+      equipmentOverlay: {
+        mappedCodes: {},
+        addedCodes: new Set<string>(),
+        trashedCodes: new Set<string>(),
+      },
+    });
   },
 
   saveCurrentFile: async () => {

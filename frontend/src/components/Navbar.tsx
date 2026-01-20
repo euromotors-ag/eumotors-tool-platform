@@ -12,6 +12,9 @@ import {
   MessageSquare,
   Home,
   FileCode,
+  FileText,
+  Upload,
+  Search,
 } from "lucide-react";
 import companyLogo from "@/assets/company_logo.svg";
 
@@ -116,9 +119,15 @@ const Navbar = () => {
       items: [
         {
           title: "PDF Convert",
-          description: "Convert PDF files to other formats",
+          description: "Convert PDF files to JSON format",
           icon: <FileDownIcon className="size-5 shrink-0" />,
           url: "/converters",
+        },
+        {
+          title: "Email Convert",
+          description: "Extract email text to JSON format",
+          icon: <FileText className="size-5 shrink-0" />,
+          url: "/converters/email",
         },
       ],
     },
@@ -132,6 +141,24 @@ const Navbar = () => {
           icon: <ExternalLinkIcon className="size-5 shrink-0" />,
           url: "https://ai.eumotors.ch/cars",
           external: true,
+        },
+      ],
+    },
+    {
+      title: "Database",
+      url: "#",
+      items: [
+        {
+          title: "Upload",
+          description: "Upload JSON files into the database",
+          icon: <Upload className="size-5 shrink-0" />,
+          url: "/database/upload",
+        },
+        {
+          title: "Search",
+          description: "Search and review database entries",
+          icon: <Search className="size-5 shrink-0" />,
+          url: "/database/search",
         },
       ],
     },
@@ -159,7 +186,7 @@ const Navbar = () => {
             </Link>
 
             <div className="flex items-center">
-              <NavigationMenu>
+              <NavigationMenu viewport={false}>
                 <NavigationMenuList>
                   {menu.map((item) => renderMenuItem(item))}
                 </NavigationMenuList>

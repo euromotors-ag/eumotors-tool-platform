@@ -7,6 +7,7 @@ import {
   FileJsonIcon,
   CopyIcon,
   SettingsIcon,
+  ChevronDownIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { FileDropZone } from "@/components/ui/FileDropZone";
@@ -87,7 +88,7 @@ function PdfConverter() {
         // Store debug results for this specific file
         // We'll show debug info for the currently extracted file
 
-        success(`Text extracted from ${file.name}`);
+        // No per-file success toast to avoid noise on batch uploads
       } catch (error) {
         errorToast(
           error instanceof Error
@@ -127,10 +128,12 @@ function PdfConverter() {
       setUploadedFiles((prev) => [...prev, ...newFiles]);
       // Toast will be shown by FileDropZone's onFilesLoaded/onFolderLoaded callbacks
 
-      // Automatically extract text from PDF files
-      for (const newFile of newFiles) {
-        await extractPdfText(newFile.id, newFile.file);
-      }
+      // Automatically extract text from PDF files in the background
+      void (async () => {
+        for (const newFile of newFiles) {
+          await extractPdfText(newFile.id, newFile.file);
+        }
+      })();
     },
     [extractPdfText, errorToast]
   );
@@ -365,11 +368,13 @@ function PdfConverter() {
   return (
     <div className="space-y-6">
       {/* Mapping Settings */}
-      <div className="p-4 bg-card border border-border rounded-lg">
-        <div className="flex items-center justify-between mb-4">
+      <div className="p-3 bg-card border border-border rounded-lg">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <SettingsIcon className="size-5 text-primary" />
-            <h3 className="font-semibold">JSON Mapping Configuration</h3>
+            <SettingsIcon className="size-4 text-primary" />
+            <h3 className="text-sm font-semibold leading-none">
+              JSON Mapping Configuration
+            </h3>
           </div>
           <Button
             variant="ghost"
@@ -599,15 +604,18 @@ function PdfConverter() {
 
                     {/* Mapped JSON (Standardized Structure) */}
                     {uploadedFile.mappedJson && (
-                      <div className="p-4 bg-card border border-green-500/50 rounded-lg">
-                        <div className="flex items-center justify-between mb-3">
+                      <details className="group p-4 bg-card border border-green-500/50 rounded-lg">
+                        <summary className="flex items-center justify-between cursor-pointer list-none">
                           <div className="flex items-center gap-2">
+                            <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
                             <FileJsonIcon className="size-4 text-green-500" />
                             <h4 className="font-semibold text-sm">
                               Mapped JSON (Vehicle Data)
                             </h4>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div
+                            className="flex items-center gap-2"
+                            onClick={(event) => event.stopPropagation()}>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -634,23 +642,26 @@ function PdfConverter() {
                               Download
                             </Button>
                           </div>
-                        </div>
-                        <pre className="text-xs bg-muted/50 p-3 rounded border border-border overflow-x-auto max-h-64 overflow-y-auto">
+                        </summary>
+                        <pre className="mt-3 text-xs bg-muted/50 p-3 rounded border border-border overflow-x-auto max-h-64 overflow-y-auto">
                           <code>{uploadedFile.mappedJson}</code>
                         </pre>
-                      </div>
+                      </details>
                     )}
 
                     {/* Raw Extracted JSON */}
-                    <div className="p-4 bg-card border border-border rounded-lg">
-                      <div className="flex items-center justify-between mb-3">
+                    <details className="group p-4 bg-card border border-border rounded-lg">
+                      <summary className="flex items-center justify-between cursor-pointer list-none">
                         <div className="flex items-center gap-2">
+                          <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
                           <FileJsonIcon className="size-4 text-orange-500" />
                           <h4 className="font-semibold text-sm">
                             Raw Extracted JSON
                           </h4>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div
+                          className="flex items-center gap-2"
+                          onClick={(event) => event.stopPropagation()}>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -668,8 +679,8 @@ function PdfConverter() {
                               handleDownloadJson(
                                 uploadedFile.id,
                                 uploadedFile.file.name,
-                                  uploadedFile.jsonOutput!,
-                                  "raw"
+                                uploadedFile.jsonOutput!,
+                                "raw"
                               )
                             }
                             className="h-8">
@@ -677,19 +688,19 @@ function PdfConverter() {
                             Download
                           </Button>
                         </div>
-                      </div>
+                      </summary>
                       {uploadedFile.extractedData && (
-                        <div className="mb-3 text-xs text-muted-foreground">
+                        <div className="mt-3 text-xs text-muted-foreground">
                           <span className="font-medium">Pages:</span>{" "}
                           {uploadedFile.extractedData.totalPages} •{" "}
                           <span className="font-medium">Words:</span>{" "}
                           {uploadedFile.extractedData.totalWordCount}
                         </div>
                       )}
-                      <pre className="text-xs bg-muted/50 p-3 rounded border border-border overflow-x-auto max-h-64 overflow-y-auto">
+                      <pre className="mt-3 text-xs bg-muted/50 p-3 rounded border border-border overflow-x-auto max-h-64 overflow-y-auto">
                         <code>{uploadedFile.jsonOutput}</code>
                       </pre>
-                    </div>
+                    </details>
                   </div>
                 )}
               </div>

@@ -872,7 +872,90 @@ function normalizeTransmissionType(transmission: string): string {
  */
 function normalizeColor(color: string): string {
   if (!color) return "";
-  return color.toUpperCase().trim();
+  const upper = color.toUpperCase().trim();
+
+  if (upper.includes("BLACK")) return "BLACK";
+  if (upper.includes("WHITE")) return "WHITE";
+  if (upper.includes("SILVER")) return "SILVER";
+  if (upper.includes("GRAY") || upper.includes("GREY")) return "GRAY";
+  if (upper.includes("BLUE")) return "BLUE";
+  if (upper.includes("RED")) return "RED";
+  if (upper.includes("GREEN")) return "GREEN";
+  if (upper.includes("BROWN")) return "BROWN";
+  if (upper.includes("ORANGE")) return "ORANGE";
+  if (upper.includes("PURPLE")) return "PURPLE";
+
+  return "";
+}
+
+/**
+ * Normalizes interior material to supported enum values
+ */
+function normalizeInteriorMaterial(material: string): string {
+  if (!material) return "";
+  const upper = material.toUpperCase().trim();
+
+  // Common trim names that are color/finish labels, not materials
+  const fabricAliases = [
+    "TITANIUM BLACK-ANTHRACITE",
+    "TITANIUM BLACK/BLACK",
+    "TITANIUM BLACK-PALOMINO BROWN",
+    "SOUL/PALOMINO BROWN",
+    "SOUL BLACK/SOUL",
+    "BLACK/BLACK/STORM GRAY",
+  ];
+  if (fabricAliases.some((alias) => upper.includes(alias))) return "FABRIC";
+
+  if (upper.includes("ALCANTARA")) return "ALCANTARA";
+  if (upper.includes("PART") && upper.includes("LEATHER"))
+    return "PART-LEATHER";
+  if (upper.includes("LEATHER")) return "LEATHER";
+
+  if (
+    upper.includes("FABRIC") ||
+    upper.includes("CLOTH") ||
+    upper.includes("TEXTILE") ||
+    upper.includes("TEXTIL") ||
+    upper.includes("LOFT") ||
+    upper.includes("LODGE")
+  )
+    return "FABRIC";
+
+  return "";
+}
+
+/**
+ * Normalize model value by stripping brand prefix and keeping base model token
+ */
+function normalizeModelValue(model: string, brand?: string): string {
+  if (!model) return "";
+  let cleaned = model.trim();
+
+  if (brand) {
+    const brandRegex = new RegExp(`^${brand}\\s+`, "i");
+    cleaned = cleaned.replace(brandRegex, "").trim();
+  }
+
+  const firstToken = cleaned.split(/\s+/)[0];
+  if (!firstToken) return "";
+  return firstToken.toUpperCase();
+}
+
+/**
+ * Extracts trim text from model value by removing brand and base model token
+ */
+function extractTrimFromModel(model: string, brand?: string): string {
+  if (!model) return "";
+  let cleaned = model.trim();
+
+  if (brand) {
+    const brandRegex = new RegExp(`^${brand}\\s+`, "i");
+    cleaned = cleaned.replace(brandRegex, "").trim();
+  }
+
+  const parts = cleaned.split(/\s+/);
+  if (parts.length <= 1) return "";
+  return parts.slice(1).join(" ").trim();
 }
 
 /**
@@ -951,21 +1034,21 @@ export function createListingMappingRules(): MappingRule[] {
       transform: (v) => {
         if (!v) return "ALLWHEELDRIVE";
         const upper = v.toUpperCase();
-        // Check for equipment code 1X0 which means Front-wheel drive
+        // Map front/rear variants to 2WHEELDRIVE to match enum values
         if (
           upper.includes("1X0") ||
           upper.includes("FRONT") ||
-          upper.includes("FWD")
+          upper.includes("FWD") ||
+          upper.includes("REAR") ||
+          upper.includes("RWD")
         )
-          return "FRONTWHEELDRIVE";
+          return "2WHEELDRIVE";
         if (
           upper.includes("ALL") ||
           upper.includes("4X4") ||
           upper.includes("AWD")
         )
           return "ALLWHEELDRIVE";
-        if (upper.includes("REAR") || upper.includes("RWD"))
-          return "REARWHEELDRIVE";
         return "ALLWHEELDRIVE";
       },
     },
@@ -989,7 +1072,7 @@ export function createListingMappingRules(): MappingRule[] {
     {
       key: "data.interior_material.value",
       pattern: "Padding\\s{2,}([^\\n\\r]+?)\\s{2,}Vehicle Type",
-      transform: normalizeColor,
+      transform: normalizeInteriorMaterial,
     },
     {
       key: "data.euro_norm.value",
@@ -1153,6 +1236,49 @@ export function mapPdfToListingJson(
   // Extract equipment codes separately
   const equipment = extractEquipmentCodes(fullText);
   const data = result.data as JsonTemplate | undefined;
+  // Normalize model to base token (e.g., "Volkswagen T-Roc R-Line" -> "T-ROC")
+  if (
+    data &&
+    data.model &&
+    typeof data.model === "object" &&
+    data.model !== null &&
+    "value" in data.model
+  ) {
+    const modelObj = data.model as { value?: unknown };
+    const rawModel = typeof modelObj.value === "string" ? modelObj.value : "";
+    const brandObj =
+      data.brand &&
+      typeof data.brand === "object" &&
+      data.brand !== null &&
+      "value" in data.brand
+        ? (data.brand as { value?: unknown })
+        : undefined;
+    const rawBrand = typeof brandObj?.value === "string" ? brandObj.value : "";
+
+    const normalizedModel = normalizeModelValue(rawModel, rawBrand);
+    if (normalizedModel) {
+      modelObj.value = normalizedModel;
+    }
+
+    const derivedTrim = extractTrimFromModel(rawModel, rawBrand);
+    if (derivedTrim) {
+      if (typeof result.trim === "string") {
+        if (result.trim.trim() === "") {
+          result.trim = derivedTrim;
+        }
+      } else if (
+        data.trim &&
+        typeof data.trim === "object" &&
+        data.trim !== null &&
+        "value" in data.trim
+      ) {
+        const trimObj = data.trim as { value?: unknown };
+        if (!trimObj.value || String(trimObj.value).trim() === "") {
+          trimObj.value = derivedTrim;
+        }
+      }
+    }
+  }
   if (
     data &&
     data.equipment &&

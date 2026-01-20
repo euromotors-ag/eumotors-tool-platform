@@ -3,11 +3,119 @@
  */
 
 import { useCallback, useMemo } from "react";
-import { Upload } from "lucide-react";
 import { FileDropZone } from "../ui/FileDropZone";
 import { useJsonEditorStore } from "../../stores/json-editor.store";
 import { CarJson, CarJsonSchema } from "../../types/json-editor.types";
 import { useToastContext } from "../../hooks/useToast";
+
+/**
+ * Flatten nested Result structure to simple values
+ * Converts { type: "ok", value: "BMW" } -> "BMW"
+ * Handles nested objects like data.brand, price_b2b.value, etc.
+ */
+const flattenJson = (obj: unknown): Record<string, unknown> => {
+  if (typeof obj !== "object" || obj === null) {
+    return {};
+  }
+
+  const result: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(obj)) {
+    // Handle Result structure: { type: "ok", value: ... } or { type: "err" }
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      "type" in value
+    ) {
+      const resultObj = value as { type: string; value?: unknown };
+
+      const resultValue = resultObj.value;
+
+      // Always try to extract equipment list, even if type is "err"
+      if (key === "equipment" && Array.isArray(resultValue)) {
+        result[key] = resultValue
+          .map((item) => {
+            if (typeof item === "object" && item !== null && "type" in item) {
+              const itemResult = item as { type: string; value?: unknown };
+              if (itemResult.type === "ok" && "value" in itemResult) {
+                return itemResult.value;
+              }
+              if (itemResult.type === "err") {
+                if (
+                  "value" in itemResult &&
+                  itemResult.value !== undefined &&
+                  itemResult.value !== null
+                ) {
+                  return String(itemResult.value);
+                }
+                return null;
+              }
+              return null;
+            }
+            if (typeof item === "string") {
+              return item;
+            }
+            return null;
+          })
+          .filter((item): item is string => typeof item === "string");
+        continue;
+      }
+
+      // Only extract other values if type is "ok"
+      if (resultObj.type === "ok" && "value" in resultObj) {
+        // Handle registration_date array: [year, month, day]
+        if (key === "registration_date" && Array.isArray(resultValue)) {
+          result[key] = resultValue;
+        } else {
+          result[key] = resultValue;
+        }
+      } else if (resultObj.type === "err") {
+        // Keep fields visible even when value is missing
+        result[key] = "";
+      } else {
+        continue;
+      }
+    }
+    // Handle nested data object - flatten it recursively
+    else if (key === "data" && typeof value === "object" && value !== null) {
+      const flattenedData = flattenJson(value);
+      // Merge data fields into root level
+      Object.assign(result, flattenedData);
+    }
+    // Handle price objects: { value: 87904, currency: "CHF" }
+    else if (
+      (key === "price_b2b" || key === "price_b2c" || key === "comparison_price") &&
+      typeof value === "object" &&
+      value !== null &&
+      "value" in value
+    ) {
+      // Keep price as object
+      result[key] = value;
+    }
+    // Handle arrays (like images)
+    else if (Array.isArray(value)) {
+      result[key] = value;
+    }
+    // Handle other nested objects
+    else if (typeof value === "object" && value !== null) {
+      result[key] = value;
+    }
+    // Handle primitives
+    else {
+      result[key] = value;
+    }
+  }
+
+  return result;
+};
+
+const getRelativePath = (file: File): string | undefined => {
+  const fileWithPath = file as File & {
+    __relativePath?: string;
+    webkitRelativePath?: string;
+  };
+  return fileWithPath.__relativePath || fileWithPath.webkitRelativePath || undefined;
+};
 
 export function FileUpload() {
   const loadFile = useJsonEditorStore((state) => state.loadFile);
@@ -62,104 +170,6 @@ export function FileUpload() {
     []
   );
 
-  /**
-   * Flatten nested Result structure to simple values
-   * Converts { type: "ok", value: "BMW" } -> "BMW"
-   * Handles nested objects like data.brand, price_b2b.value, etc.
-   */
-  const flattenJson = (obj: unknown): Record<string, unknown> => {
-    if (typeof obj !== "object" || obj === null) {
-      return {};
-    }
-
-    const result: Record<string, unknown> = {};
-
-    for (const [key, value] of Object.entries(obj)) {
-      // Handle Result structure: { type: "ok", value: ... } or { type: "err" }
-      if (
-        typeof value === "object" &&
-        value !== null &&
-        "type" in value
-      ) {
-        const resultObj = value as { type: string; value?: unknown };
-        
-        const resultValue = resultObj.value;
-
-        // Always try to extract equipment list, even if type is "err"
-        if (key === "equipment" && Array.isArray(resultValue)) {
-          result[key] = resultValue
-            .map((item) => {
-              if (typeof item === "object" && item !== null && "type" in item) {
-                const itemResult = item as { type: string; value?: unknown };
-                if (itemResult.type === "ok" && "value" in itemResult) {
-                  return itemResult.value;
-                }
-                if (itemResult.type === "err") {
-                  if (
-                    "value" in itemResult &&
-                    itemResult.value !== undefined &&
-                    itemResult.value !== null
-                  ) {
-                    return String(itemResult.value);
-                  }
-                  return null;
-                }
-                return null;
-              }
-              if (typeof item === "string") {
-                return item;
-              }
-              return null;
-            })
-            .filter((item): item is string => typeof item === "string");
-          continue;
-        }
-
-        // Only extract other values if type is "ok"
-        if (resultObj.type === "ok" && "value" in resultObj) {
-          // Handle registration_date array: [year, month, day]
-          if (key === "registration_date" && Array.isArray(resultValue)) {
-            result[key] = resultValue;
-          } else {
-            result[key] = resultValue;
-          }
-        } else {
-          // Skip error values for other fields
-          continue;
-        }
-      }
-      // Handle nested data object - flatten it recursively
-      else if (key === "data" && typeof value === "object" && value !== null) {
-        const flattenedData = flattenJson(value);
-        // Merge data fields into root level
-        Object.assign(result, flattenedData);
-      }
-      // Handle price objects: { value: 87904, currency: "CHF" }
-      else if (
-        (key === "price_b2b" || key === "price_b2c" || key === "comparison_price") &&
-        typeof value === "object" &&
-        value !== null &&
-        "value" in value
-      ) {
-        // Keep price as object
-        result[key] = value;
-      }
-      // Handle arrays (like images)
-      else if (Array.isArray(value)) {
-        result[key] = value;
-      }
-      // Handle other nested objects
-      else if (typeof value === "object" && value !== null) {
-        result[key] = value;
-      }
-      // Handle primitives
-      else {
-        result[key] = value;
-      }
-    }
-
-    return result;
-  };
 
   const handleFilesSelected = useCallback(
     async (files: File[]) => {
@@ -171,16 +181,14 @@ export function FileUpload() {
       const results = await Promise.all(filePromises);
       
       // Extract relative paths from File objects if available (from folder selection)
-      const validFiles = results
-        .map((result, index) => {
-          if (!result) return null;
-          const file = jsonFiles[index];
-          // File objects from folder selection via showDirectoryPicker have __relativePath property
-          // File objects from folder input have webkitRelativePath property (read-only)
-          const relativePath = (file as any).__relativePath || (file as any).webkitRelativePath || undefined;
-          return { ...result, relativePath };
-        })
-        .filter((f): f is { name: string; json: CarJson; relativePath?: string } => f !== null);
+      const validFiles = results.flatMap((result, index) => {
+        if (!result) return [];
+        const file = jsonFiles[index];
+        // File objects from folder selection via showDirectoryPicker have __relativePath property
+        // File objects from folder input have webkitRelativePath property (read-only)
+        const relativePath = getRelativePath(file);
+        return [{ ...result, relativePath }];
+      });
 
       if (validFiles.length > 0) {
         if (validFiles.length === 1) {
