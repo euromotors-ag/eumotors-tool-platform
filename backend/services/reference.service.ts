@@ -15,7 +15,7 @@ interface EquipmentDictionarySnapshot {
   version: string;
   checksum: string;
   itemsByCode: Record<string, EquipmentItem>;
-  mappingsByRawValue?: Record<string, string>; // Maps raw value (uppercase) to canonical code
+  mappingsByRawValue?: Record<string, string | string[]>; // Maps raw value (uppercase) to canonical code(s) - string for single, string[] for multi-mapping
   fetchedAt: number;
 }
 
@@ -31,7 +31,7 @@ interface EquipmentReferenceResponse {
   version: string;
   checksum: string;
   itemsByCode: Record<string, EquipmentItem>;
-  mappingsByRawValue?: Record<string, string>;
+  mappingsByRawValue?: Record<string, string | string[]>;
   fetchedAt: number;
   stale?: boolean;
 }
@@ -106,17 +106,22 @@ let backgroundRefreshPromise: Promise<void> | null = null;
  */
 function computeChecksum(
   itemsByCode: Record<string, EquipmentItem>,
-  mappingsByRawValue?: Record<string, string>
+  mappingsByRawValue?: Record<string, string | string[]>
 ): string {
   const sortedItems = Object.keys(itemsByCode)
     .sort()
     .map((code) => `${code}:${itemsByCode[code].name}`)
     .join("|");
-  
+
   const sortedMappings = mappingsByRawValue
     ? Object.keys(mappingsByRawValue)
         .sort()
-        .map((raw) => `${raw}:${mappingsByRawValue![raw]}`)
+        .map((raw) => {
+          const mapping = mappingsByRawValue![raw];
+          // Handle both string (single) and string[] (multi-mapping)
+          const mappingStr = Array.isArray(mapping) ? mapping.join(",") : mapping;
+          return `${raw}:${mappingStr}`;
+        })
         .join("|")
     : "";
 
@@ -160,9 +165,16 @@ async function fetchFromSupabase(): Promise<Result<EquipmentDictionarySnapshot, 
     // Mappings to trash equipment should not appear in the snapshot (equipment not in itemsByCode)
     const mappings = await prisma.equipmentMapping.findMany({
       where: {
-        equipment: {
-          binCategory: "bin_good", // Only mappings to valid equipment
-        },
+        OR: [
+          {
+            equipment: {
+              binCategory: "bin_good", // Single mappings to valid equipment
+            },
+          },
+          {
+            equipmentId: null, // Multi-mappings (equipmentId is null, equipmentIds is used)
+          },
+        ],
       },
       include: {
         equipment: {
@@ -175,26 +187,48 @@ async function fetchFromSupabase(): Promise<Result<EquipmentDictionarySnapshot, 
       },
     });
 
-    const mappingsByRawValue: Record<string, string> = {};
+    const mappingsByRawValue: Record<string, string | string[]> = {};
     for (const mapping of mappings) {
-      // Double-check: only include if equipment is bin_good (defensive programming)
-      if (mapping.equipment.binCategory !== "bin_good") {
-        continue;
-      }
-
-      // Normalize raw value to uppercase
       const rawValueUpper = mapping.rawValue.toUpperCase();
-      // Map to equipment name (not code) - name is what should appear in JSON
-      const equipmentName = mapping.equipment.name;
       
-      // Store mapping: raw value -> equipment name
-      mappingsByRawValue[rawValueUpper] = equipmentName;
-      
-      // Also create mapping for underscore version if raw value has spaces/hyphens
-      // This handles cases where JSON has "12_VOLT_SOCKET" but DB has "12-VOLT SOCKET"
-      const underscoreVersion = rawValueUpper.replace(/[\s\-]/g, "_");
-      if (underscoreVersion !== rawValueUpper) {
-        mappingsByRawValue[underscoreVersion] = equipmentName;
+      // Handle multi-mapping (equipmentIds JSONB array)
+      if (mapping.equipmentIds && Array.isArray(mapping.equipmentIds)) {
+        const equipmentIds = mapping.equipmentIds as string[];
+        // Fetch all equipment items for multi-mapping
+        const equipmentItems = await prisma.equipment.findMany({
+          where: {
+            id: { in: equipmentIds },
+            binCategory: "bin_good",
+          },
+          select: { name: true },
+        });
+        
+        // Store as array of names for multi-mapping
+        const equipmentNames = equipmentItems.map(e => e.name);
+        if (equipmentNames.length > 0) {
+          mappingsByRawValue[rawValueUpper] = equipmentNames;
+          
+          // Also create mapping for underscore version
+          const underscoreVersion = rawValueUpper.replace(/[\s\-]/g, "_");
+          if (underscoreVersion !== rawValueUpper) {
+            mappingsByRawValue[underscoreVersion] = equipmentNames;
+          }
+        }
+      }
+      // Handle single mapping (backward compatibility)
+      else if (mapping.equipment && mapping.equipment.binCategory === "bin_good") {
+        // Map to equipment name (not code) - name is what should appear in JSON
+        const equipmentName = mapping.equipment.name;
+        
+        // Store mapping: raw value -> equipment name
+        mappingsByRawValue[rawValueUpper] = equipmentName;
+        
+        // Also create mapping for underscore version if raw value has spaces/hyphens
+        // This handles cases where JSON has "12_VOLT_SOCKET" but DB has "12-VOLT SOCKET"
+        const underscoreVersion = rawValueUpper.replace(/[\s\-]/g, "_");
+        if (underscoreVersion !== rawValueUpper) {
+          mappingsByRawValue[underscoreVersion] = equipmentName;
+        }
       }
     }
 

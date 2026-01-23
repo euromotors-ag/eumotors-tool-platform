@@ -1,8 +1,3 @@
-/**
- * Enterprise-grade JSON Fields Panel
- * Shows all fields with proper dropdowns/selectors from database
- */
-
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { enumApi } from "../../api/enum.api";
@@ -36,7 +31,7 @@ const BaseStringInput: React.FunctionComponent<{
     <input
       type="text"
       value={value ?? ""}
-      onChange={(e) => setValue(e.target.value || undefined)}
+      onChange={(e) => setValue(e.target.value === "" ? "" : e.target.value)}
       className="w-full px-1.5 py-1 text-xs border-2 border-gray-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-700 text-gray-200 placeholder-gray-400 transition-all"
       placeholder="Enter text"
     />
@@ -262,6 +257,12 @@ export function JsonFieldsPanel() {
     return value as string | number | undefined;
   };
 
+  // Check if field exists in JSON object (regardless of value)
+  const fieldExists = (key: string): boolean => {
+    const obj = workingJson as Record<string, unknown>;
+    return key in obj;
+  };
+
   const setFieldValue = (key: string, value: unknown) => {
     const obj = workingJson as Record<string, unknown>;
     
@@ -271,7 +272,13 @@ export function JsonFieldsPanel() {
       const priceObj = obj[key] as { value: unknown; currency: string };
       updateField(key, { ...priceObj, value });
     } else {
-      updateField(key, value);
+      // For string fields, keep empty string instead of undefined to preserve the field
+      // For number fields, allow undefined (which will show as empty)
+      if (typeof value === "string" && value === "") {
+        updateField(key, "");
+      } else {
+        updateField(key, value);
+      }
     }
   };
 
@@ -297,7 +304,7 @@ export function JsonFieldsPanel() {
                 </div>
               </div>
             )}
-            {getFieldValue("vin") !== undefined && (
+            {fieldExists("vin") && (
               <FieldRow
                 label="VIN"
                 value={getFieldValue("vin")}
@@ -321,7 +328,7 @@ export function JsonFieldsPanel() {
                 Input={ModelInputComponent}
               />
             )}
-            {getFieldValue("mileage_km") !== undefined && (
+            {fieldExists("mileage_km") && (
               <FieldRow
                 label="Mileage (km)"
                 value={getFieldValue("mileage_km")}
@@ -394,7 +401,7 @@ export function JsonFieldsPanel() {
                 Input={FuelTypeInputComponent}
               />
             )}
-            {getFieldValue("power_hp") !== undefined && (
+            {fieldExists("power_hp") && (
               <FieldRow
                 label="Power (hp)"
                 value={getFieldValue("power_hp")}
@@ -402,7 +409,7 @@ export function JsonFieldsPanel() {
                 Input={NumberInput}
               />
             )}
-            {getFieldValue("cylinders") !== undefined && (
+            {fieldExists("cylinders") && (
               <FieldRow
                 label="Cylinders"
                 value={getFieldValue("cylinders")}
@@ -410,7 +417,7 @@ export function JsonFieldsPanel() {
                 Input={NumberInput}
               />
             )}
-            {getFieldValue("cubic_capacity_cm3") !== undefined && (
+            {fieldExists("cubic_capacity_cm3") && (
               <FieldRow
                 label="Cubic Capacity (cm³)"
                 value={getFieldValue("cubic_capacity_cm3")}
@@ -418,7 +425,7 @@ export function JsonFieldsPanel() {
                 Input={NumberInput}
               />
             )}
-            {getFieldValue("fuel_consumption_l_100km") !== undefined && (
+            {fieldExists("fuel_consumption_l_100km") && (
               <FieldRow
                 label="Fuel Cons (l/100km)"
                 value={getFieldValue("fuel_consumption_l_100km")}
@@ -426,7 +433,7 @@ export function JsonFieldsPanel() {
                 Input={NumberInput}
               />
             )}
-            {getFieldValue("co2_emission_g_km") !== undefined && (
+            {fieldExists("co2_emission_g_km") && (
               <FieldRow
                 label="CO2 Emission (g/km)"
                 value={getFieldValue("co2_emission_g_km")}
@@ -465,7 +472,7 @@ export function JsonFieldsPanel() {
                 Input={TransmissionTypeInputComponent}
               />
             )}
-            {getFieldValue("seats") !== undefined && (
+            {fieldExists("seats") && (
               <FieldRow
                 label="Seats"
                 value={getFieldValue("seats")}
@@ -473,7 +480,7 @@ export function JsonFieldsPanel() {
                 Input={NumberInput}
               />
             )}
-            {getFieldValue("doors") !== undefined && (
+            {fieldExists("doors") && (
               <FieldRow
                 label="Doors"
                 value={getFieldValue("doors")}
@@ -481,7 +488,7 @@ export function JsonFieldsPanel() {
                 Input={NumberInput}
               />
             )}
-            {getFieldValue("empty_weight_kg") !== undefined && (
+            {fieldExists("empty_weight_kg") && (
               <FieldRow
                 label="Empty Weight (kg)"
                 value={getFieldValue("empty_weight_kg")}
@@ -539,12 +546,12 @@ export function JsonFieldsPanel() {
         </Section>
 
         {/* Pricing Section */}
-        {(getFieldValue("price_b2b") !== undefined || 
-          getFieldValue("price_b2c") !== undefined || 
-          getFieldValue("comparison_price") !== undefined) && (
+        {(fieldExists("price_b2b") || 
+          fieldExists("price_b2c") || 
+          fieldExists("comparison_price")) && (
           <Section title="Pricing" color="blue">
             <div className="flex flex-col space-y-2">
-              {getFieldValue("price_b2b") !== undefined && (
+              {fieldExists("price_b2b") && (
                 <div className="flex items-center gap-2">
                   <label className="text-xs font-medium text-gray-300 whitespace-nowrap min-w-[130px]">
                     Price B2B:
@@ -568,7 +575,7 @@ export function JsonFieldsPanel() {
                   </div>
                 </div>
               )}
-              {getFieldValue("price_b2c") !== undefined && (
+              {fieldExists("price_b2c") && (
                 <div className="flex items-center gap-2">
                   <label className="text-xs font-medium text-gray-300 whitespace-nowrap min-w-[130px]">
                     Price B2C:
@@ -592,7 +599,7 @@ export function JsonFieldsPanel() {
                   </div>
                 </div>
               )}
-              {getFieldValue("comparison_price") !== undefined && (
+              {fieldExists("comparison_price") && (
                 <div className="flex items-center gap-2">
                   <label className="text-xs font-medium text-gray-300 whitespace-nowrap min-w-[130px]">
                     Comparison Price:
@@ -621,16 +628,16 @@ export function JsonFieldsPanel() {
         )}
 
         {/* Metadata Section */}
-        {(getFieldValue("comparison_link") !== undefined ||
-          getFieldValue("comparison_text") !== undefined ||
-          getFieldValue("trim") !== undefined ||
-          getFieldValue("unique") !== undefined ||
-          getFieldValue("dealer_phone") !== undefined ||
-          getFieldValue("dealer_email") !== undefined ||
-          getFieldValue("comment") !== undefined) && (
+        {(fieldExists("comparison_link") ||
+          fieldExists("comparison_text") ||
+          fieldExists("trim") ||
+          fieldExists("unique") ||
+          fieldExists("dealer_phone") ||
+          fieldExists("dealer_email") ||
+          fieldExists("comment")) && (
           <Section title="Metadata" color="gray">
             <div className="flex flex-col space-y-2">
-              {getFieldValue("comparison_link") !== undefined && (
+              {fieldExists("comparison_link") && (
                 <FieldRow
                   label="Comparison Link"
                   value={getFieldValue("comparison_link")}
@@ -638,7 +645,7 @@ export function JsonFieldsPanel() {
                   Input={StringInput}
                 />
               )}
-              {getFieldValue("comparison_text") !== undefined && (
+              {fieldExists("comparison_text") && (
                 <FieldRow
                   label="Comparison Text"
                   value={getFieldValue("comparison_text")}
@@ -646,7 +653,7 @@ export function JsonFieldsPanel() {
                   Input={StringInput}
                 />
               )}
-              {getFieldValue("trim") !== undefined && (
+              {fieldExists("trim") && (
                 <FieldRow
                   label="Trim"
                   value={getFieldValue("trim")}
@@ -654,7 +661,7 @@ export function JsonFieldsPanel() {
                   Input={StringInput}
                 />
               )}
-              {getFieldValue("unique") !== undefined && (
+              {fieldExists("unique") && (
                 <FieldRow
                   label="Unique"
                   value={getFieldValue("unique")}
@@ -662,7 +669,7 @@ export function JsonFieldsPanel() {
                   Input={StringInput}
                 />
               )}
-              {getFieldValue("dealer_phone") !== undefined && (
+              {fieldExists("dealer_phone") && (
                 <FieldRow
                   label="Dealer Phone"
                   value={getFieldValue("dealer_phone")}
@@ -670,7 +677,7 @@ export function JsonFieldsPanel() {
                   Input={StringInput}
                 />
               )}
-              {getFieldValue("dealer_email") !== undefined && (
+              {fieldExists("dealer_email") && (
                 <FieldRow
                   label="Dealer Email"
                   value={getFieldValue("dealer_email")}
@@ -678,7 +685,7 @@ export function JsonFieldsPanel() {
                   Input={StringInput}
                 />
               )}
-              {getFieldValue("comment") !== undefined && (
+              {fieldExists("comment") && (
                 <div className="flex items-start gap-2">
                   <label className="text-xs font-medium text-gray-300 whitespace-nowrap min-w-[130px] pt-1.5">
                     Comment:

@@ -204,11 +204,13 @@ class EquipmentApi {
 
   /**
    * Map unknown equipment to existing canonical
+   * Supports both single mapping (targetEquipmentId) and multi-mapping (targetEquipmentIds)
    */
   async mapToExistingCanonical(
     rawValue: string,
     sourceSystem: string,
-    targetEquipmentId: string
+    targetEquipmentId: string,
+    targetEquipmentIds?: string[]
   ): Promise<NormalizedEquipmentItem> {
     const response = await axios.post<{
       status: string;
@@ -216,7 +218,8 @@ class EquipmentApi {
     }>(`${this.baseUrl}/map`, {
       rawValue,
       sourceSystem,
-      targetEquipmentId,
+      targetEquipmentId, // Backward compatibility
+      targetEquipmentIds, // Multi-mapping: array of IDs
     });
     return response.data.data;
   }

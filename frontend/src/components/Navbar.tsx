@@ -171,7 +171,7 @@ const Navbar = () => {
   };
 
   return (
-    <section className="border-b border-border bg-background">
+    <section className="relative z-50 border-b border-border bg-background">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Desktop Menu */}
         <nav className="hidden items-center justify-between py-4 lg:flex">

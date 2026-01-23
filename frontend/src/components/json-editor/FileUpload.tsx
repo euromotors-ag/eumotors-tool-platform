@@ -120,6 +120,7 @@ const getRelativePath = (file: File): string | undefined => {
 export function FileUpload() {
   const loadFile = useJsonEditorStore((state) => state.loadFile);
   const loadFiles = useJsonEditorStore((state) => state.loadFiles);
+  const restoreValidationStatusFromMetadata = useJsonEditorStore((state) => state.restoreValidationStatusFromMetadata);
   const files = useJsonEditorStore((state) => state.files);
   const activeFileName = useJsonEditorStore((state) => state.activeFileName);
   const { success, error: errorToast } = useToastContext();
@@ -176,6 +177,24 @@ export function FileUpload() {
       const jsonFiles = files.filter((file) => file.name.endsWith(".json"));
       if (jsonFiles.length === 0) return;
 
+      // Check for draft-metadata.json file
+      const metadataFile = files.find((file) => file.name === "draft-metadata.json");
+      let metadata: {
+        version: string;
+        savedAt: string;
+        files: Record<string, { isValidated: boolean; status: "green" | "yellow" | "red"; unknownCount?: number }>;
+      } | null = null;
+
+      if (metadataFile) {
+        try {
+          const metadataText = await metadataFile.text();
+          metadata = JSON.parse(metadataText);
+          success(`Found draft metadata from ${new Date(metadata.savedAt).toLocaleString()}`);
+        } catch (error) {
+          console.error("Failed to parse draft-metadata.json:", error);
+        }
+      }
+
       // Process all files in parallel
       const filePromises = jsonFiles.map(processJsonFile);
       const results = await Promise.all(filePromises);
@@ -196,9 +215,14 @@ export function FileUpload() {
         } else {
           loadFiles(validFiles);
         }
+
+        // Restore validation status from metadata if available
+        if (metadata) {
+          restoreValidationStatusFromMetadata(metadata);
+        }
       }
     },
-    [processJsonFile, loadFile, loadFiles]
+    [processJsonFile, loadFile, loadFiles, restoreValidationStatusFromMetadata, success]
   );
 
   const handleFolderSelected = useCallback(

@@ -90,9 +90,31 @@ export class EquipmentNormalizationService {
         },
       },
     });
+    
+    // Build mapping map: rawValue -> mapping(s)
+    // Support both single mapping (equipmentId) and multi-mapping (equipmentIds)
     const mappingMap = new Map<string, typeof mappings[0]>();
+    const multiMappingMap = new Map<string, Array<{ id: string; name: string; code: string | null }>>();
+    
     for (const mapping of mappings) {
-      mappingMap.set(mapping.rawValue.toUpperCase(), mapping);
+      const rawValueUpper = mapping.rawValue.toUpperCase();
+      
+      // Check if this is a multi-mapping (has equipmentIds JSONB array)
+      if (mapping.equipmentIds && Array.isArray(mapping.equipmentIds)) {
+        // Multi-mapping: fetch all equipment items
+        const equipmentIds = mapping.equipmentIds as string[];
+        const equipmentItems = await prisma.equipment.findMany({
+          where: {
+            id: { in: equipmentIds },
+            binCategory: "bin_good",
+          },
+          select: { id: true, name: true, code: true },
+        });
+        multiMappingMap.set(rawValueUpper, equipmentItems);
+      } else if (mapping.equipmentId && mapping.equipment) {
+        // Single mapping (backward compatibility)
+        mappingMap.set(rawValueUpper, mapping);
+      }
     }
 
     // Process each raw value
@@ -122,13 +144,32 @@ export class EquipmentNormalizationService {
         item.canonicalLabel = eq.name;
         item.equipmentId = eq.id;
       }
-      // Check mapping
+      // Check multi-mapping first (takes precedence)
+      else if (multiMappingMap.has(rawValue)) {
+        const equipmentItems = multiMappingMap.get(rawValue)!;
+        // For multi-mapping, return the first item (frontend will handle expansion)
+        // The frontend will expand this to all items when processing
+        if (equipmentItems.length > 0) {
+          const firstItem = equipmentItems[0];
+          item.status = "GREEN";
+          item.canonicalCode = firstItem.code || undefined;
+          item.canonicalLabel = firstItem.name;
+          item.equipmentId = firstItem.id;
+          // Store all equipment IDs in a custom field for frontend expansion
+          (item as any).equipmentIds = equipmentItems.map(e => e.id);
+          (item as any).equipmentNames = equipmentItems.map(e => e.name);
+        }
+      }
+      // Check single mapping (backward compatibility)
       else if (mappingMap.has(rawValue)) {
         const mapping = mappingMap.get(rawValue)!;
-        item.status = "GREEN";
-        item.canonicalCode = mapping.equipment.code || undefined;
-        item.canonicalLabel = mapping.equipment.name;
-        item.equipmentId = mapping.equipment.id;
+        // Ensure equipment exists (should always exist for single mapping)
+        if (mapping.equipment) {
+          item.status = "GREEN";
+          item.canonicalCode = mapping.equipment.code || undefined;
+          item.canonicalLabel = mapping.equipment.name;
+          item.equipmentId = mapping.equipment.id;
+        }
       }
 
       normalized.push(item);

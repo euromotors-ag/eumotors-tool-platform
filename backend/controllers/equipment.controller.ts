@@ -12,9 +12,9 @@ const getEquipmentByCategory = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { category } = req.params;
+    const { binCategory } = req.params;
 
-    if (category !== "bin_good" && category !== "bin_trash") {
+    if (binCategory !== "bin_good" && binCategory !== "bin_trash") {
       res.status(400).json({
         status: "error",
         message: "Invalid category. Must be 'bin_good' or 'bin_trash'",
@@ -23,7 +23,7 @@ const getEquipmentByCategory = async (
     }
 
     const equipment = await equipmentService.getEquipmentByCategory(
-      category as EquipmentBin
+      binCategory as EquipmentBin
     );
     res.json({ status: "success", data: equipment });
   } catch (error) {
@@ -307,23 +307,59 @@ const mapToExistingCanonical = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { rawValue, sourceSystem, targetEquipmentId } = req.body;
+    const { rawValue, sourceSystem, targetEquipmentId, targetEquipmentIds } = req.body;
 
-    if (!rawValue || !sourceSystem || !targetEquipmentId) {
+    if (!rawValue || typeof rawValue !== "string") {
       res.status(400).json({
         status: "error",
-        message: "rawValue, sourceSystem, and targetEquipmentId are required",
+        message: "rawValue is required",
       });
       return;
     }
 
-    const result = await equipmentAdminService.mapToExistingCanonical(
-      rawValue,
-      sourceSystem,
-      targetEquipmentId
-    );
+    if (!sourceSystem || typeof sourceSystem !== "string") {
+      res.status(400).json({
+        status: "error",
+        message: "sourceSystem is required",
+      });
+      return;
+    }
 
-    res.json({ status: "success", data: result });
+    // Support both single mapping (targetEquipmentId) and multi-mapping (targetEquipmentIds)
+    if (targetEquipmentIds && Array.isArray(targetEquipmentIds)) {
+      // Multi-mapping: validate array
+      if (targetEquipmentIds.length === 0) {
+        res.status(400).json({
+          status: "error",
+          message: "targetEquipmentIds must contain at least one equipment ID",
+        });
+        return;
+      }
+      
+      // Use first ID as fallback for backward compatibility in return value
+      const result = await equipmentAdminService.mapToExistingCanonical(
+        rawValue,
+        sourceSystem,
+        targetEquipmentIds[0],
+        undefined,
+        targetEquipmentIds
+      );
+      res.json({ status: "success", data: result });
+    } else if (targetEquipmentId && typeof targetEquipmentId === "string") {
+      // Single mapping (backward compatibility)
+      const result = await equipmentAdminService.mapToExistingCanonical(
+        rawValue,
+        sourceSystem,
+        targetEquipmentId
+      );
+      res.json({ status: "success", data: result });
+    } else {
+      res.status(400).json({
+        status: "error",
+        message: "Either targetEquipmentId (string) or targetEquipmentIds (array) is required",
+      });
+      return;
+    }
   } catch (error) {
     handleError(error, res);
   }

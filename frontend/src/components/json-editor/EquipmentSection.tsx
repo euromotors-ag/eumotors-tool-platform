@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Plus,
   X,
@@ -58,7 +58,45 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
   );
   const [mappingCode, setMappingCode] = useState<string | null>(null);
   const [mappingSearch, setMappingSearch] = useState("");
+  const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([]);
   const queryClient = useQueryClient();
+
+  // Block body scroll when mapping modal is open
+  useEffect(() => {
+    if (mappingCode) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      // Block scroll on body
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      document.body.style.overflow = "hidden";
+    } else {
+      // Restore scroll when modal closes
+      const scrollY = document.body.style.top;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || "0") * -1);
+      }
+    }
+
+    // Cleanup function to restore scroll if component unmounts with modal open
+    return () => {
+      if (mappingCode) {
+        const scrollY = document.body.style.top;
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.width = "";
+        document.body.style.overflow = "";
+        if (scrollY) {
+          window.scrollTo(0, parseInt(scrollY || "0") * -1);
+        }
+      }
+    };
+  }, [mappingCode]);
 
   const equipment = workingJson?.equipment || [];
 
@@ -73,19 +111,27 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
 
     // First, collect all raw codes that map to each name from dictionary mappings
     // This creates a reverse lookup: name -> [raw codes]
-    Object.entries(dictionaryMappings).forEach(([rawValue, name]) => {
-      const existing = nameToRawCodes.get(name) || [];
-      if (!existing.includes(rawValue)) {
-        nameToRawCodes.set(name, [...existing, rawValue]);
-      }
+    // Handle both single mapping (string) and multi-mapping (string[])
+    Object.entries(dictionaryMappings).forEach(([rawValue, mappedValue]) => {
+      const names = Array.isArray(mappedValue) ? mappedValue : [mappedValue];
+      names.forEach((name) => {
+        const existing = nameToRawCodes.get(name) || [];
+        if (!existing.includes(rawValue)) {
+          nameToRawCodes.set(name, [...existing, rawValue]);
+        }
+      });
     });
 
     // Also check session overlay mappings (these take precedence)
-    Object.entries(equipmentOverlay.mappedCodes).forEach(([rawCode, name]) => {
-      const existing = nameToRawCodes.get(name) || [];
-      if (!existing.includes(rawCode)) {
-        nameToRawCodes.set(name, [...existing, rawCode]);
-      }
+    // Handle both single mapping (string) and multi-mapping (string[])
+    Object.entries(equipmentOverlay.mappedCodes).forEach(([rawCode, mappedValue]) => {
+      const names = Array.isArray(mappedValue) ? mappedValue : [mappedValue];
+      names.forEach((name) => {
+        const existing = nameToRawCodes.get(name) || [];
+        if (!existing.includes(rawCode)) {
+          nameToRawCodes.set(name, [...existing, rawCode]);
+        }
+      });
     });
 
     // Now process equipment array (which contains names)
@@ -175,6 +221,13 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
     return Object.keys(dictionary).sort();
   }, [dictionary]);
 
+  // Get available equipment items sorted by name for dropdown display
+  const availableEquipmentItems = useMemo(() => {
+    return Object.entries(dictionary)
+      .map(([code, item]) => ({ code, name: item.name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [dictionary]);
+
   const handleAdd = () => {
     if (newCode.trim() && !equipment.includes(newCode.trim())) {
       addEquipment(newCode.trim().toUpperCase());
@@ -227,6 +280,8 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
 
       // Invalidate dictionary cache to refresh
       queryClient.invalidateQueries({ queryKey: ["equipment-dictionary"] });
+      // Also invalidate canonical equipment cache so mapping modal updates
+      queryClient.invalidateQueries({ queryKey: ["canonical-equipment"] });
     } catch (error) {
       console.error("Failed to add equipment to database:", error);
       alert(
@@ -266,6 +321,8 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
 
       // Invalidate dictionary cache to refresh (for future sessions)
       queryClient.invalidateQueries({ queryKey: ["equipment-dictionary"] });
+      // Also invalidate canonical equipment cache so mapping modal updates
+      queryClient.invalidateQueries({ queryKey: ["canonical-equipment"] });
     } catch (error) {
       console.error("Failed to add equipment to database:", error);
       alert(
@@ -276,36 +333,49 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
     }
   };
 
-  // Handle map to existing
+  // Handle map to existing (supports both single and multi-mapping)
   const handleMapToExisting = async (
     unknownCode: string,
-    targetEquipmentId: string
+    targetEquipmentIds: string[]
   ) => {
     try {
+      // Call API with array of equipment IDs
       await equipmentApi.mapToExistingCanonical(
         unknownCode,
         "json-editor",
-        targetEquipmentId
+        targetEquipmentIds[0], // Backward compatibility: first ID
+        targetEquipmentIds // Multi-mapping: array of IDs
       );
 
-      // Find the target equipment
-      const targetEquipment = canonicalEquipment.find(
-        (e) => e.id === targetEquipmentId
+      // Find all target equipment items
+      const targetEquipmentItems = canonicalEquipment.filter(
+        (e) => targetEquipmentIds.includes(e.id)
       );
-      if (targetEquipment) {
-        // Use equipment name (not code) - name is what should appear in JSON
-        const targetName = targetEquipment.name;
+      
+      if (targetEquipmentItems.length > 0) {
+        // Use equipment names (not codes) - names are what should appear in JSON
+        const targetNames = targetEquipmentItems.map(e => e.name);
         
         // Record mapping in session overlay (immediate effect across all files)
-        // Map to name, not code
-        recordEquipmentMapping(unknownCode, targetName);
+        // For multi-mapping, pass array of names
+        recordEquipmentMapping(unknownCode, targetNames.length > 1 ? targetNames : targetNames[0]);
         
-        // Replace unknown code with mapped name in JSON
-        mapEquipment(unknownCode, targetName);
+        // For single mapping, also call mapEquipment for consistency
+        // For multi-mapping, recordEquipmentMapping already expanded it to all names
+        if (targetNames.length === 1) {
+          mapEquipment(unknownCode, targetNames[0]);
+        }
       }
 
       // Invalidate dictionary cache (for future sessions)
       queryClient.invalidateQueries({ queryKey: ["equipment-dictionary"] });
+      // Also invalidate canonical equipment cache so mapping modal updates
+      queryClient.invalidateQueries({ queryKey: ["canonical-equipment"] });
+      
+      // Close modal and reset selection
+      setMappingCode(null);
+      setMappingSearch("");
+      setSelectedEquipmentIds([]);
     } catch (error) {
       console.error("Failed to map equipment:", error);
       alert(
@@ -335,6 +405,8 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
 
       // Invalidate dictionary cache (for future sessions)
       queryClient.invalidateQueries({ queryKey: ["equipment-dictionary"] });
+      // Also invalidate canonical equipment cache so mapping modal updates
+      queryClient.invalidateQueries({ queryKey: ["canonical-equipment"] });
     } catch (error) {
       console.error("Failed to add equipment to trash:", error);
       alert(
@@ -420,9 +492,9 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
               className="flex-1 min-w-0 px-1.5 py-1 text-xs border border-gray-500 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-700 transition-all h-[26px] cursor-pointer [&>option]:bg-gray-700 [&>option]:text-gray-200"
               title="Select equipment from database">
               <option value="" style={{ color: '#9ca3af' }}>Select from database...</option>
-              {availableCodes.map((code) => (
-                <option key={code} value={code} style={{ color: '#e5e7eb' }}>
-                  {code}
+              {availableEquipmentItems.map((item) => (
+                <option key={item.code} value={item.code} style={{ color: '#e5e7eb' }}>
+                  {item.name}
                 </option>
               ))}
             </select>
@@ -630,8 +702,12 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
         {/* Mapping Modal */}
         {mappingCode && (
           <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-            onClick={() => setMappingCode(null)}>
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-hidden"
+            onClick={() => {
+              setMappingCode(null);
+              setMappingSearch("");
+              setSelectedEquipmentIds([]);
+            }}>
             <div
               className="bg-gray-800 border border-gray-700 rounded-lg p-3 max-w-lg w-full mx-4 max-h-[80vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}>
@@ -661,7 +737,7 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
                 />
               </div>
 
-              {/* Equipment list */}
+              {/* Equipment list with checkboxes for multi-select */}
               <div className="flex-1 overflow-y-auto space-y-1 mb-2">
                 {canonicalEquipment
                   .filter((eq) => {
@@ -673,30 +749,48 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
                       (eq.category && eq.category.toLowerCase().includes(query))
                     );
                   })
-                  .map((eq) => (
-                    <button
-                      key={eq.id}
-                      onClick={() => {
-                        handleMapToExisting(mappingCode, eq.id);
-                        setMappingCode(null);
-                        setMappingSearch("");
-                      }}
-                      className="w-full text-left px-2 py-1 text-xs bg-gray-700/50 hover:bg-gray-700 rounded border border-gray-600 hover:border-blue-500 transition-all">
-                      <div className="font-medium text-gray-200 truncate">
-                        {eq.name}
-                      </div>
-                      {eq.code && (
-                        <div className="text-xs text-gray-400 font-mono truncate">
-                          {eq.code}
+                  .map((eq) => {
+                    const isSelected = selectedEquipmentIds.includes(eq.id);
+                    return (
+                      <button
+                        key={eq.id}
+                        onClick={() => {
+                          // Toggle selection
+                          if (isSelected) {
+                            setSelectedEquipmentIds(selectedEquipmentIds.filter(id => id !== eq.id));
+                          } else {
+                            setSelectedEquipmentIds([...selectedEquipmentIds, eq.id]);
+                          }
+                        }}
+                        className={`w-full text-left px-2 py-1 text-xs rounded border transition-all flex items-start gap-2 ${
+                          isSelected
+                            ? "bg-blue-500/20 border-blue-500 hover:bg-blue-500/30"
+                            : "bg-gray-700/50 border-gray-600 hover:bg-gray-700 hover:border-blue-500"
+                        }`}>
+                        <div className={`mt-0.5 w-3 h-3 rounded border-2 shrink-0 ${
+                          isSelected
+                            ? "bg-blue-500 border-blue-500"
+                            : "border-gray-500"
+                        }`}>
+                          {isSelected && (
+                            <svg className="w-full h-full text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
                         </div>
-                      )}
-                      {eq.category && (
-                        <div className="text-xs text-gray-500 truncate">
-                          {eq.category}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-200 truncate">
+                            {eq.name}
+                          </div>
+                          {eq.category && (
+                            <div className="text-xs text-gray-500 truncate">
+                              {eq.category}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                 {canonicalEquipment.filter((eq) => {
                   if (!mappingSearch) return false;
                   const query = mappingSearch.toLowerCase();
@@ -713,15 +807,34 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
                   )}
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-700">
-                <button
-                  onClick={() => {
-                    setMappingCode(null);
-                    setMappingSearch("");
-                  }}
-                  className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600">
-                  Cancel
-                </button>
+              <div className="flex justify-between items-center gap-2 pt-2 border-t border-gray-700">
+                <div className="text-xs text-gray-400">
+                  {selectedEquipmentIds.length > 0 && (
+                    <span>{selectedEquipmentIds.length} selected</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setMappingCode(null);
+                      setMappingSearch("");
+                      setSelectedEquipmentIds([]);
+                    }}
+                    className="px-3 py-1.5 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600">
+                    Cancel
+                  </button>
+                  {selectedEquipmentIds.length > 0 && (
+                    <button
+                      onClick={() => {
+                        if (mappingCode && selectedEquipmentIds.length > 0) {
+                          handleMapToExisting(mappingCode, selectedEquipmentIds);
+                        }
+                      }}
+                      className="px-3 py-1.5 text-xs bg-blue-500 text-white rounded hover:bg-blue-600">
+                      Save ({selectedEquipmentIds.length})
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

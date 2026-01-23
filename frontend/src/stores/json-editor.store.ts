@@ -43,12 +43,14 @@ interface JsonEditorState {
   dictionaryVersion: string | null;
   dictionaryFetchedAt: number | null;
   dictionaryItems: Record<string, EquipmentItem>;
-  dictionaryMappings: Record<string, string>; // Maps raw value (uppercase) to canonical code from dictionary
+  dictionaryMappings: Record<string, string | string[]>; // Maps raw value (uppercase) to canonical code(s) from dictionary - string for single, string[] for multi-mapping
+  trashEquipment: Set<string>; // Set of equipment names marked as bin_trash (uppercase)
 
   // Session-level equipment overlay (tracks CRUD changes in current session)
   equipmentOverlay: {
-    // Maps raw code to canonical code (for mapped equipment)
-    mappedCodes: Record<string, string>;
+    // Maps raw code to canonical code(s) (for mapped equipment)
+    // string for single mapping, string[] for multi-mapping
+    mappedCodes: Record<string, string | string[]>;
     // Set of codes added to database in this session
     addedCodes: Set<string>;
     // Set of codes marked as trash in this session
@@ -73,20 +75,27 @@ interface JsonEditorState {
   saveCurrentFile: () => Promise<void>;
   markFileAsSaved: (fileName: string) => void;
   markFileAsValid: (fileName: string) => void;
+  restoreValidationStatusFromMetadata: (metadata: {
+    version: string;
+    savedAt: string;
+    files: Record<string, { isValidated: boolean; status: "green" | "yellow" | "red"; unknownCount?: number }>;
+  }) => void;
   navigateToNextFile: () => void;
   navigateToPreviousFile: () => void;
   isLastFile: () => boolean;
   exportAllAsZip: () => Promise<void>;
+  exportAllAsDraft: () => Promise<void>;
   setDictionaryInfo: (
     version: string,
     fetchedAt: number,
     items: Record<string, EquipmentItem>,
     mappings?: Record<string, string>
   ) => void;
+  setTrashEquipment: (trashSet: Set<string>) => void;
   validateEquipment: (equipment: string[]) => void;
   
   // Equipment overlay actions (for CRUD tracking)
-  recordEquipmentMapping: (rawCode: string, canonicalCode: string) => void;
+  recordEquipmentMapping: (rawCode: string, canonicalCode: string | string[]) => void;
   recordEquipmentAdded: (code: string) => void;
   recordEquipmentTrashed: (code: string) => void;
 
@@ -115,28 +124,65 @@ function computeHash(json: CarJson): string {
 /**
  * Convert equipment values (codes/raw values) to equipment names
  * This ensures JSON always contains equipment names, not codes or raw values
+ * Also filters out trash equipment (bin_trash)
  */
 function convertEquipmentToNames(
   equipment: string[],
   dictionaryItems: Record<string, EquipmentItem>,
-  dictionaryMappings: Record<string, string>,
-  overlayMappedCodes: Record<string, string>
+  dictionaryMappings: Record<string, string | string[]>,
+  overlayMappedCodes: Record<string, string | string[]>,
+  trashEquipment?: Set<string>
 ): string[] {
   const uniqueNames = new Set<string>();
 
   equipment.forEach((value) => {
-    let equipmentName: string | null = null;
-
-    // 1. Check session overlay (takes precedence) - already mapped to name
-    if (overlayMappedCodes[value]) {
-      equipmentName = overlayMappedCodes[value];
-    }
-    // 2. Check dictionary mappings (from database) - maps to name
-    else {
+    // First, check if equipment is in trash - filter it out completely
+    if (trashEquipment) {
       const codeUpper = value.toUpperCase();
       const underscoreVersion = codeUpper.replace(/[\s\-]/g, "_");
-      equipmentName = dictionaryMappings[codeUpper] || dictionaryMappings[underscoreVersion] || null;
+      const spaceVersion = codeUpper.replace(/[_\-]/g, " ");
+      
+      // Skip trash equipment
+      if (
+        trashEquipment.has(codeUpper) ||
+        trashEquipment.has(underscoreVersion) ||
+        trashEquipment.has(spaceVersion)
+      ) {
+        return; // Skip this equipment - it's in trash
+      }
     }
+
+    // Handle multi-mapping expansion: if value maps to multiple names, expand to all
+    const mappedValue = overlayMappedCodes[value] || (() => {
+      const codeUpper = value.toUpperCase();
+      const underscoreVersion = codeUpper.replace(/[\s\-]/g, "_");
+      return dictionaryMappings[codeUpper] || dictionaryMappings[underscoreVersion] || null;
+    })();
+
+    // If mappedValue is an array (multi-mapping), expand to all values
+    if (Array.isArray(mappedValue)) {
+      mappedValue.forEach((name) => {
+        if (name && trashEquipment) {
+          const nameUpper = name.toUpperCase();
+          const nameUnderscore = nameUpper.replace(/[\s\-]/g, "_");
+          const nameSpace = nameUpper.replace(/[_\-]/g, " ");
+          
+          if (
+            !trashEquipment.has(nameUpper) &&
+            !trashEquipment.has(nameUnderscore) &&
+            !trashEquipment.has(nameSpace)
+          ) {
+            uniqueNames.add(name);
+          }
+        } else if (name) {
+          uniqueNames.add(name);
+        }
+      });
+      return; // Skip to next equipment value
+    }
+
+    // Single mapping (backward compatibility)
+    let equipmentName: string | null = mappedValue;
 
     // 3. If not mapped, check if value is a code in dictionary - get name from dictionary
     if (!equipmentName) {
@@ -154,6 +200,21 @@ function convertEquipmentToNames(
           // 5. Keep as-is (custom or unknown - will be handled later)
           equipmentName = value;
         }
+      }
+    }
+
+    // Double-check: don't add if equipment name is in trash
+    if (equipmentName && trashEquipment) {
+      const nameUpper = equipmentName.toUpperCase();
+      const nameUnderscore = nameUpper.replace(/[\s\-]/g, "_");
+      const nameSpace = nameUpper.replace(/[_\-]/g, " ");
+      
+      if (
+        trashEquipment.has(nameUpper) ||
+        trashEquipment.has(nameUnderscore) ||
+        trashEquipment.has(nameSpace)
+      ) {
+        return; // Skip - equipment name is in trash
       }
     }
 
@@ -179,8 +240,9 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
   dictionaryFetchedAt: null,
   dictionaryItems: {},
   dictionaryMappings: {},
+  trashEquipment: new Set<string>(),
   equipmentOverlay: {
-    mappedCodes: {},
+    mappedCodes: {}, // Record<string, string | string[]>
     addedCodes: new Set<string>(),
     trashedCodes: new Set<string>(),
   },
@@ -194,12 +256,14 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
     files.forEach(({ name, json, handle, relativePath }) => {
       // Convert equipment values to equipment names immediately when loading
       // This ensures JSON always contains names, not codes or raw values
+      // Also filters out trash equipment (bin_trash)
       const equipmentArray = Array.isArray(json.equipment) ? json.equipment : [];
       const equipmentNames = convertEquipmentToNames(
         equipmentArray,
         state.dictionaryItems,
         state.dictionaryMappings,
-        state.equipmentOverlay.mappedCodes
+        state.equipmentOverlay.mappedCodes,
+        state.trashEquipment
       );
 
       const normalizedJson: CarJson = {
@@ -249,6 +313,7 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
     if (!fileData) return;
 
     // Save current file state before switching (create new Map to trigger re-render)
+    // IMPORTANT: Don't change isValid here - only markFileAsValid should set it to true
     if (state.activeFileName && state.activeFileName !== fileName) {
       const currentFileData = state.files.get(state.activeFileName);
       if (currentFileData) {
@@ -259,7 +324,7 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
           patches: state.patches,
           validationState: state.validationState,
           unknownEquipment: state.unknownEquipment,
-          isValid: state.unknownEquipment.length === 0,
+          // Don't change isValid - preserve existing value (only markFileAsValid sets it to true)
         });
         state.files = newFilesMap;
       }
@@ -332,13 +397,15 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
   loadFile: (json: CarJson, fileName: string) => {
     // Convert equipment values to equipment names immediately when loading
     // This ensures JSON always contains names, not codes or raw values
+    // Also filters out trash equipment (bin_trash)
     const state = get();
     const equipmentArray = Array.isArray(json.equipment) ? json.equipment : [];
     const equipmentNames = convertEquipmentToNames(
       equipmentArray,
       state.dictionaryItems,
       state.dictionaryMappings,
-      state.equipmentOverlay.mappedCodes
+      state.equipmentOverlay.mappedCodes,
+      state.trashEquipment
     );
 
     const normalizedJson: CarJson = {
@@ -697,6 +764,7 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
       patches: [], // Clear patches when saving
       validationState: validationState,
       isValid,
+      isSaved: isValid, // Mark as saved if valid (no unknown equipment)
     };
 
     // Update Map and trigger Zustand re-render by creating new Map reference
@@ -711,6 +779,35 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
         originalHash: computeHash(workingJson),
         patches: [],
       });
+    }
+  },
+
+  restoreValidationStatusFromMetadata: (metadata: {
+    version: string;
+    savedAt: string;
+    files: Record<string, { isValidated: boolean; status: "green" | "yellow" | "red"; unknownCount?: number }>;
+  }) => {
+    const state = get();
+    const newFilesMap = new Map(state.files);
+    let hasUpdates = false;
+
+    // Restore validation status for each file that exists in metadata
+    newFilesMap.forEach((fileData, fileName) => {
+      const metadataEntry = metadata.files[fileData.fileName];
+      if (metadataEntry) {
+        // Restore validation status from metadata
+        const updatedFileData: FileData = {
+          ...fileData,
+          isValid: metadataEntry.isValidated,
+          isSaved: metadataEntry.isValidated, // Mark as saved if it was validated
+        };
+        newFilesMap.set(fileName, updatedFileData);
+        hasUpdates = true;
+      }
+    });
+
+    if (hasUpdates) {
+      set({ files: newFilesMap });
     }
   },
 
@@ -748,16 +845,19 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
     if (!state.activeFileName || state.files.size <= 1) return;
 
     // Save current file state before switching
+    // IMPORTANT: Don't change isValid here - only markFileAsValid should set it to true
     const currentFileData = state.files.get(state.activeFileName);
     if (currentFileData) {
-      state.files.set(state.activeFileName, {
+      const newFilesMap = new Map(state.files);
+      newFilesMap.set(state.activeFileName, {
         ...currentFileData,
         workingJson: state.workingJson || currentFileData.workingJson,
         patches: state.patches,
         validationState: state.validationState,
         unknownEquipment: state.unknownEquipment,
-        isValid: state.unknownEquipment.length === 0,
+        // Don't change isValid - preserve existing value (only markFileAsValid sets it to true)
       });
+      set({ files: newFilesMap });
     }
 
     // Find previous file
@@ -793,22 +893,57 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
 
     // Helper function to convert equipment values to equipment names
     const convertEquipmentToNames = (equipment: string[]): string[] => {
-      const { dictionaryItems, dictionaryMappings, equipmentOverlay } = get();
+      const { dictionaryItems, dictionaryMappings, equipmentOverlay, trashEquipment } = get();
       const uniqueNames = new Set<string>();
 
       equipment.forEach((value) => {
-        let equipmentName: string | null = null;
-
-        // 1. Check session overlay (takes precedence) - already mapped to name
-        if (equipmentOverlay.mappedCodes[value]) {
-          equipmentName = equipmentOverlay.mappedCodes[value];
-        }
-        // 2. Check dictionary mappings (from database) - maps to name
-        else {
+        // First, check if equipment is in trash - filter it out completely
+        if (trashEquipment) {
           const codeUpper = value.toUpperCase();
           const underscoreVersion = codeUpper.replace(/[\s\-]/g, "_");
-          equipmentName = dictionaryMappings[codeUpper] || dictionaryMappings[underscoreVersion] || null;
+          const spaceVersion = codeUpper.replace(/[_\-]/g, " ");
+          
+          // Skip trash equipment
+          if (
+            trashEquipment.has(codeUpper) ||
+            trashEquipment.has(underscoreVersion) ||
+            trashEquipment.has(spaceVersion)
+          ) {
+            return; // Skip this equipment - it's in trash
+          }
         }
+
+        // Handle multi-mapping expansion: if value maps to multiple names, expand to all
+        const mappedValue = equipmentOverlay.mappedCodes[value] || (() => {
+          const codeUpper = value.toUpperCase();
+          const underscoreVersion = codeUpper.replace(/[\s\-]/g, "_");
+          return dictionaryMappings[codeUpper] || dictionaryMappings[underscoreVersion] || null;
+        })();
+
+        // If mappedValue is an array (multi-mapping), expand to all values
+        if (Array.isArray(mappedValue)) {
+          mappedValue.forEach((name) => {
+            if (name && trashEquipment) {
+              const nameUpper = name.toUpperCase();
+              const nameUnderscore = nameUpper.replace(/[\s\-]/g, "_");
+              const nameSpace = nameUpper.replace(/[_\-]/g, " ");
+              
+              if (
+                !trashEquipment.has(nameUpper) &&
+                !trashEquipment.has(nameUnderscore) &&
+                !trashEquipment.has(nameSpace)
+              ) {
+                uniqueNames.add(name);
+              }
+            } else if (name) {
+              uniqueNames.add(name);
+            }
+          });
+          return; // Skip to next equipment value
+        }
+
+        // Single mapping (backward compatibility)
+        let equipmentName: string | null = mappedValue;
 
         // 3. If not mapped, check if value is a code in dictionary - get name from dictionary
         if (!equipmentName) {
@@ -826,6 +961,21 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
               // 5. Keep as-is (custom or unknown)
               equipmentName = value;
             }
+          }
+        }
+
+        // Double-check: don't add if equipment name is in trash
+        if (equipmentName && trashEquipment) {
+          const nameUpper = equipmentName.toUpperCase();
+          const nameUnderscore = nameUpper.replace(/[\s\-]/g, "_");
+          const nameSpace = nameUpper.replace(/[_\-]/g, " ");
+          
+          if (
+            trashEquipment.has(nameUpper) ||
+            trashEquipment.has(nameUnderscore) ||
+            trashEquipment.has(nameSpace)
+          ) {
+            return; // Skip - equipment name is in trash
           }
         }
 
@@ -897,11 +1047,193 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
     saveAs(zipBlob, "edited-json-files.zip");
   },
 
+  exportAllAsDraft: async () => {
+    const state = get();
+    if (state.files.size === 0) return;
+
+    // Dynamic import to avoid bundle size issues
+    const JSZip = (await import("jszip")).default;
+    const { saveAs } = await import("file-saver");
+
+    const zip = new JSZip();
+
+    // Helper function to convert equipment values to equipment names
+    const convertEquipmentToNames = (equipment: string[]): string[] => {
+      const { dictionaryItems, dictionaryMappings, equipmentOverlay, trashEquipment } = get();
+      const uniqueNames = new Set<string>();
+
+      equipment.forEach((value) => {
+        // First, check if equipment is in trash - filter it out completely
+        if (trashEquipment) {
+          const codeUpper = value.toUpperCase();
+          const underscoreVersion = codeUpper.replace(/[\s\-]/g, "_");
+          const spaceVersion = codeUpper.replace(/[_\-]/g, " ");
+          
+          // Skip trash equipment
+          if (
+            trashEquipment.has(codeUpper) ||
+            trashEquipment.has(underscoreVersion) ||
+            trashEquipment.has(spaceVersion)
+          ) {
+            return; // Skip this equipment - it's in trash
+          }
+        }
+
+        // Handle multi-mapping expansion: if value maps to multiple names, expand to all
+        const mappedValue = equipmentOverlay.mappedCodes[value] || (() => {
+          const codeUpper = value.toUpperCase();
+          const underscoreVersion = codeUpper.replace(/[\s\-]/g, "_");
+          return dictionaryMappings[codeUpper] || dictionaryMappings[underscoreVersion] || null;
+        })();
+
+        // If mappedValue is an array (multi-mapping), expand to all values
+        if (Array.isArray(mappedValue)) {
+          mappedValue.forEach((name) => {
+            if (name && trashEquipment) {
+              const nameUpper = name.toUpperCase();
+              const nameUnderscore = nameUpper.replace(/[\s\-]/g, "_");
+              const nameSpace = nameUpper.replace(/[_\-]/g, " ");
+              
+              if (
+                !trashEquipment.has(nameUpper) &&
+                !trashEquipment.has(nameUnderscore) &&
+                !trashEquipment.has(nameSpace)
+              ) {
+                uniqueNames.add(name);
+              }
+            } else if (name) {
+              uniqueNames.add(name);
+            }
+          });
+          return; // Skip to next equipment value
+        }
+
+        // Single mapping (backward compatibility)
+        let equipmentName: string | null = mappedValue;
+
+        // 3. If not mapped, check if value is a code in dictionary - get name from dictionary
+        if (!equipmentName) {
+          const dictionaryItem = dictionaryItems[value];
+          if (dictionaryItem) {
+            equipmentName = dictionaryItem.name;
+          } else {
+            // 4. Check if value is already a name (exists in dictionary values)
+            const existingItem = Object.values(dictionaryItems).find(
+              (item) => item.name === value
+            );
+            if (existingItem) {
+              equipmentName = value; // Already a name
+            } else {
+              // 5. Keep as-is (custom or unknown)
+              equipmentName = value;
+            }
+          }
+        }
+
+        // Double-check: don't add if equipment name is in trash
+        if (equipmentName && trashEquipment) {
+          const nameUpper = equipmentName.toUpperCase();
+          const nameUnderscore = nameUpper.replace(/[\s\-]/g, "_");
+          const nameSpace = nameUpper.replace(/[_\-]/g, " ");
+          
+          if (
+            trashEquipment.has(nameUpper) ||
+            trashEquipment.has(nameUnderscore) ||
+            trashEquipment.has(nameSpace)
+          ) {
+            return; // Skip - equipment name is in trash
+          }
+        }
+
+        if (equipmentName) {
+          uniqueNames.add(equipmentName);
+        }
+      });
+
+      return Array.from(uniqueNames).sort();
+    };
+
+    // Build metadata object
+    const metadata: {
+      version: string;
+      savedAt: string;
+      files: Record<string, { isValidated: boolean; status: "green" | "yellow" | "red"; unknownCount?: number }>;
+    } = {
+      version: "1.0",
+      savedAt: new Date().toISOString(),
+      files: {},
+    };
+
+    // Add each file to ZIP
+    const fileEntries = Array.from(state.files.entries());
+    
+    for (const [fileName, fileData] of fileEntries) {
+      // Use state.workingJson for active file (may have unsaved changes),
+      // otherwise use fileData.workingJson
+      const isActiveFile = state.activeFileName === fileName;
+      const jsonToExport = isActiveFile && state.workingJson 
+        ? state.workingJson 
+        : fileData.workingJson;
+
+      // Convert equipment values to equipment names before export
+      const exportedJson = {
+        ...jsonToExport,
+        equipment: jsonToExport.equipment 
+          ? convertEquipmentToNames(jsonToExport.equipment)
+          : [],
+      };
+
+      const jsonString = JSON.stringify(exportedJson, null, 2);
+
+      // Determine ZIP path - preserve original filename
+      let zipPath: string;
+      if (fileData.relativePath) {
+        // Preserve folder structure and original filename
+        zipPath = fileData.relativePath;
+      } else {
+        // Use original filename
+        zipPath = fileData.fileName;
+      }
+
+      // Ensure path uniqueness - if collision detected, append index
+      let finalPath = zipPath;
+      let counter = 1;
+      while (zip.files[finalPath]) {
+        const nameWithoutExt = fileData.fileName.replace(/\.json$/i, "");
+        finalPath = `${nameWithoutExt}-${counter}.json`;
+        counter++;
+      }
+
+      zip.file(finalPath, jsonString);
+
+      // Add to metadata
+      const unknownCount = fileData.unknownEquipment.length;
+      const status: "green" | "yellow" | "red" = fileData.isValid 
+        ? "green" 
+        : unknownCount > 0 
+          ? "yellow" 
+          : "red";
+      
+      metadata.files[fileData.fileName] = {
+        isValidated: fileData.isValid,
+        status,
+        unknownCount: unknownCount > 0 ? unknownCount : undefined,
+      };
+    }
+
+    // Add metadata file to ZIP
+    zip.file("draft-metadata.json", JSON.stringify(metadata, null, 2));
+
+    // Generate and download ZIP
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    saveAs(zipBlob, "draft-progress.zip");
+  },
+
   setDictionaryInfo: (
     version: string,
     fetchedAt: number,
     items: Record<string, EquipmentItem>,
-    mappings?: Record<string, string>
+    mappings?: Record<string, string | string[]>
   ) => {
     const state = get();
     
@@ -915,6 +1247,7 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
 
     // Convert equipment to names in all already-loaded files when dictionary becomes available
     // This handles the case where files were loaded before dictionary was ready
+    // Also filters out trash equipment
     const newFilesMap = new Map(state.files);
     let hasUpdates = false;
 
@@ -924,10 +1257,11 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
         equipmentArray,
         items,
         mappings || {},
-        state.equipmentOverlay.mappedCodes
+        state.equipmentOverlay.mappedCodes,
+        state.trashEquipment
       );
 
-      // Only update if conversion changed anything
+      // Only update if conversion changed anything (including trash filtering)
       if (JSON.stringify(equipmentArray.sort()) !== JSON.stringify(convertedEquipment.sort())) {
         const updatedJson = {
           ...fileData.workingJson,
@@ -968,15 +1302,89 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
     }
   },
 
+  setTrashEquipment: (trashSet: Set<string>) => {
+    const state = get();
+    set({ trashEquipment: trashSet });
+    
+    // Re-validate and filter equipment in all files when trash set is loaded
+    // This handles the case where files were loaded before trash equipment was fetched
+    if (state.files.size > 0) {
+      const newFilesMap = new Map(state.files);
+      let hasUpdates = false;
+
+      newFilesMap.forEach((fileData, mapKey) => {
+        const equipmentArray = fileData.workingJson.equipment || [];
+        const filteredEquipment = equipmentArray.filter((code) => {
+          const codeUpper = code.toUpperCase();
+          const underscoreVersion = codeUpper.replace(/[\s\-]/g, "_");
+          const spaceVersion = codeUpper.replace(/[_\-]/g, " ");
+          
+          // Keep equipment that is NOT in trash
+          return !(
+            trashSet.has(codeUpper) ||
+            trashSet.has(underscoreVersion) ||
+            trashSet.has(spaceVersion)
+          );
+        });
+
+        // Update if trash equipment was filtered out
+        if (filteredEquipment.length !== equipmentArray.length) {
+          const updatedJson = {
+            ...fileData.workingJson,
+            equipment: filteredEquipment,
+          };
+          newFilesMap.set(mapKey, {
+            ...fileData,
+            workingJson: updatedJson,
+          });
+          hasUpdates = true;
+        }
+      });
+
+      if (hasUpdates) {
+        set({ files: newFilesMap });
+        
+        // Re-validate active file's equipment
+        if (state.activeFileName && state.workingJson?.equipment) {
+          const activeFileData = newFilesMap.get(state.activeFileName);
+          if (activeFileData) {
+            set({ workingJson: activeFileData.workingJson });
+            get().validateEquipment(activeFileData.workingJson.equipment);
+          }
+        }
+      } else if (state.activeFileName && state.workingJson?.equipment) {
+        // Even if no files were updated, re-validate to update validation state
+        get().validateEquipment(state.workingJson.equipment);
+      }
+    }
+  },
+
   validateEquipment: (equipment: string[]) => {
     const state = get();
     const dictionary = state.dictionaryItems;
     const dictionaryMappings = state.dictionaryMappings;
     const overlay = state.equipmentOverlay;
+    const trashEquipmentSet = state.trashEquipment;
     const validationState: Record<string, EquipmentValidationResult> = {};
     const unknownEquipment: string[] = [];
+    
+    // First, filter out trash equipment from the input array
+    const nonTrashEquipment = equipment.filter((code) => {
+      const codeUpper = code.toUpperCase();
+      const underscoreVersion = codeUpper.replace(/[\s\-]/g, "_");
+      const spaceVersion = codeUpper.replace(/[_\-]/g, " ");
+      // Keep equipment that is NOT in trash
+      // Check multiple formats: "4 DOORS", "4_DOORS", "4-DOORS" all should match trash set
+      return !(
+        overlay.trashedCodes.has(code) ||
+        trashEquipmentSet.has(codeUpper) ||
+        trashEquipmentSet.has(underscoreVersion) ||
+        trashEquipmentSet.has(spaceVersion)
+      );
+    });
 
-    for (const code of equipment) {
+    // Validate only non-trash equipment
+    for (const code of nonTrashEquipment) {
       // Preserve custom status if already set
       const existingStatus = state.validationState[code]?.status;
       if (existingStatus === "custom") {
@@ -984,19 +1392,6 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
           code,
           status: "custom",
         };
-        continue;
-      }
-
-      // Check session overlay first (CRUD changes in current session)
-      // 1. Check if code is trashed
-      if (overlay.trashedCodes.has(code)) {
-        // Trashed codes should be removed, but if still present, mark as unknown
-        validationState[code] = {
-          code,
-          status: "unknown",
-          reason: "Marked as trash",
-        };
-        unknownEquipment.push(code);
         continue;
       }
 
@@ -1029,10 +1424,10 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
       // 4. Check dictionary mappings (from database)
       // Dictionary mappings now map to equipment name (not code)
       // Normalize code to uppercase for lookup (handles both "12-VOLT SOCKET" and "12_VOLT_SOCKET")
-      const codeUpper = code.toUpperCase();
-      const underscoreVersion = codeUpper.replace(/[\s\-]/g, "_");
+      const codeUpper2 = code.toUpperCase();
+      const underscoreVersion2 = codeUpper2.replace(/[\s\-]/g, "_");
       
-      const mappedEquipmentName = dictionaryMappings[codeUpper] || dictionaryMappings[underscoreVersion];
+      const mappedEquipmentName = dictionaryMappings[codeUpper2] || dictionaryMappings[underscoreVersion2];
       if (mappedEquipmentName) {
         // Check if equipment name exists in dictionary (search by name in values)
         // dictionary is indexed by code, so we need to search values
@@ -1076,6 +1471,28 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
       }
     }
 
+    // If trash equipment was filtered out, update the workingJson
+    if (nonTrashEquipment.length !== equipment.length && state.workingJson) {
+      const updatedJson = {
+        ...state.workingJson,
+        equipment: nonTrashEquipment,
+      };
+      set({ workingJson: updatedJson });
+      
+      // Also update in file map if active file exists
+      if (state.activeFileName) {
+        const fileData = state.files.get(state.activeFileName);
+        if (fileData) {
+          const newFilesMap = new Map(state.files);
+          newFilesMap.set(state.activeFileName, {
+            ...fileData,
+            workingJson: updatedJson,
+          });
+          set({ files: newFilesMap });
+        }
+      }
+    }
+
     set({
       validationState,
       unknownEquipment,
@@ -1100,9 +1517,11 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
   },
 
   // Equipment overlay actions (for CRUD tracking)
-  recordEquipmentMapping: (rawCode: string, canonicalCode: string) => {
+  recordEquipmentMapping: (rawCode: string, canonicalCode: string | string[]) => {
     const state = get();
     const overlay = state.equipmentOverlay;
+    
+    // Store mapping (can be string or string[])
     set({
       equipmentOverlay: {
         ...overlay,
@@ -1113,18 +1532,22 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
       },
     });
     
+    // Expand to array if it's a single string
+    const canonicalCodes = Array.isArray(canonicalCode) ? canonicalCode : [canonicalCode];
+    
     // Apply mapping to ALL files in the session (not just active file)
     const newFilesMap = new Map(state.files);
     let hasUpdates = false;
 
     newFilesMap.forEach((fileData, mapKey) => {
       const equipmentArray = fileData.workingJson.equipment || [];
-      // If this file contains the rawCode, replace it with canonicalCode
+      // If this file contains the rawCode, replace it with all canonicalCodes (expansion)
       if (equipmentArray.includes(rawCode)) {
-        const updatedEquipment = equipmentArray.map((code) =>
-          code === rawCode ? canonicalCode : code
+        // Replace rawCode with all canonical codes (multi-mapping expansion)
+        const updatedEquipment = equipmentArray.flatMap((code) =>
+          code === rawCode ? canonicalCodes : [code]
         );
-        // Remove duplicates (if canonicalCode already exists)
+        // Remove duplicates
         const uniqueEquipment = Array.from(new Set(updatedEquipment));
         
         const updatedJson = {
