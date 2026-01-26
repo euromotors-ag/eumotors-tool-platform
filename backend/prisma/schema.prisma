@@ -19,8 +19,8 @@ model User {
   reservedListings  CatalogListing[] @relation("ReservedListings")
   garage            Garage?
   uploadedDocuments OrderDocument[]
-  profile           UserProfile?
   shareTokens       ShareToken[]
+  profile           UserProfile?
 }
 
 model UserProfile {
@@ -174,7 +174,6 @@ model Car {
   interior_color           String?
   energy_efficiency        String?
   euro_norm                String?
-  equipment                String[]        // Legacy: behålls för bakåtkompatibilitet och enkel visning
   seats                    Int
   doors                    Int
   cylinders                Int
@@ -189,13 +188,11 @@ model Car {
   first_registration_day   Int?
   created_at               DateTime        @default(now())
   original_link            String
-  equipment_t1             String[]
-  equipment_t2             String[]
   interior_material        String?
   trim                     String?
+  equipmentItems           CarEquipment[]
   CatalogListing           CatalogListing?
   garageItems              GarageItem[]
-  equipmentItems           CarEquipment[]  // Many-to-many relation för avancerad filtrering och sökning
 }
 
 model CatalogListing {
@@ -236,25 +233,88 @@ model ContactMessage {
 }
 
 model ShareToken {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  token        String   @unique @default(dbgenerated("gen_random_uuid()"))
-  entityType   String   @default("car") // "car" or "batchOffer"
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token        String    @unique @default(dbgenerated("gen_random_uuid()"))
   carId        String?
-  batchOfferId String?
-  createdById  String   @db.Uuid
-  createdAt    DateTime @default(now())
+  createdById  String    @db.Uuid
+  createdAt    DateTime  @default(now())
   expiresAt    DateTime
-  viewCount    Int      @default(0)
+  viewCount    Int       @default(0)
   maxViews     Int?
   lastViewedAt DateTime?
   lastViewedIp String?
-  isActive     Boolean  @default(true)
-  createdBy    User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  isActive     Boolean   @default(true)
+  batchOfferId String?
+  entityType   String    @default("car")
+  createdBy    User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([token])
   @@index([carId])
   @@index([batchOfferId])
   @@index([expiresAt])
+}
+
+model Equipment {
+  id          String             @id @default(uuid())
+  name        String             @unique @db.VarChar(255)
+  binCategory EquipmentBin
+  category    String?            @db.VarChar(100)
+  source      String?            @default("manual") @db.VarChar(50)
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  createdBy   String?            @map("created_by") @db.VarChar(255)
+  code        String?            @unique @db.VarChar(100)
+  cars        CarEquipment[]
+  mappings    EquipmentMapping[]
+
+  @@index([name])
+  @@index([binCategory])
+  @@index([category])
+  @@index([code])
+}
+
+model EquipmentMapping {
+  id           String     @id @default(uuid())
+  sourceSystem String     @db.VarChar(100)
+  rawValue     String     @db.VarChar(255)
+  equipmentId  String?    @map("equipment_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  createdBy    String?    @map("created_by") @db.VarChar(255)
+  equipmentIds Json?
+  equipment    Equipment? @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceSystem, rawValue])
+  @@index([sourceSystem])
+  @@index([rawValue])
+  @@index([equipmentId])
+}
+
+model CarEquipment {
+  id          String    @id @default(uuid())
+  carId       String    @map("car_id")
+  equipmentId String    @map("equipment_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  car         Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([carId, equipmentId])
+  @@index([carId])
+  @@index([equipmentId])
+}
+
+model CarEnum {
+  id        String      @id @default(uuid())
+  name      String      @db.VarChar(255)
+  enumType  CarEnumType
+  parentId  String?     @db.VarChar(255)
+  source    String?     @default("enum") @db.VarChar(50)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@unique([name, enumType, parentId])
+  @@index([enumType])
+  @@index([parentId])
 }
 
 enum OrderStatus {
@@ -285,92 +345,6 @@ enum ListingStatus {
   RESERVED
   SOLD
   HIDDEN
-}
-
-model Equipment {
-  id          String        @id @default(uuid())
-  name        String        @unique @db.VarChar(255)
-  binCategory EquipmentBin  // Kategorisering för "bin" (godkänd vs skräp)
-  category    String?       @db.VarChar(100) // Funktionell kategori (t.ex. "Safety & Performance", "Comfort", "Technology")
-  source      String?       @default("manual") @db.VarChar(50)
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-  createdBy   String?       @map("created_by") @db.VarChar(255)
-  code        String?       @unique @db.VarChar(100) // Canonical code (UPPER_SNAKE_CASE) for normalization - optional, auto-generated from name if not provided
-  cars        CarEquipment[] // Many-to-many relation för avancerad filtrering
-  mappings    EquipmentMapping[] // Mappings from raw values to this canonical equipment
-
-  @@index([name])
-  @@index([binCategory])
-  @@index([category])
-  @@index([code])
-}
-
-// Mapping table: maps raw equipment values from source systems to canonical equipment
-model EquipmentMapping {
-  id              String    @id @default(uuid())
-  sourceSystem    String    @db.VarChar(100) // e.g., "pdf", "blocket", "mobile", "manual"
-  rawValue        String    @db.VarChar(255) // Original raw value from source
-  equipmentId     String?   @map("equipment_id") // Reference to canonical Equipment (nullable for backward compatibility)
-  equipmentIds    Json?     // Array of equipment IDs for multi-mapping: ["id1", "id2", "id3"]
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  createdBy       String?   @map("created_by") @db.VarChar(255)
-  
-  equipment       Equipment? @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-
-  @@unique([sourceSystem, rawValue]) // One mapping per source system + raw value combination
-  @@index([sourceSystem])
-  @@index([rawValue])
-  @@index([equipmentId])
-}
-
-// Optional: Audit trail for raw equipment values (can be removed if not needed)
-// model RawCarEquipment {
-//   id              String    @id @default(uuid())
-//   carId           String?   @map("car_id")
-//   sourceSystem    String    @db.VarChar(100)
-//   rawValue        String    @db.VarChar(255)
-//   normalizedId    String?   @map("normalized_id")
-//   status          String    @default("YELLOW") @db.VarChar(20)
-//   createdAt       DateTime  @default(now()) @map("created_at")
-//   normalized      Equipment? @relation(fields: [normalizedId], references: [id], onDelete: SetNull)
-//   @@unique([sourceSystem, rawValue, carId])
-//   @@index([carId])
-//   @@index([sourceSystem])
-//   @@index([rawValue])
-//   @@index([status])
-//   @@index([normalizedId])
-// }
-
-// Junction table för many-to-many relation mellan Car och Equipment
-// Används för avancerad filtrering och sökning i marketplace
-model CarEquipment {
-  id          String    @id @default(uuid())
-  carId       String    @map("car_id")
-  equipmentId String    @map("equipment_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  
-  car         Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
-  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-
-  @@unique([carId, equipmentId]) // En bil kan inte ha samma equipment två gånger
-  @@index([carId])
-  @@index([equipmentId])
-}
-
-model CarEnum {
-  id        String   @id @default(uuid())
-  name      String   @db.VarChar(255)
-  enumType  CarEnumType
-  parentId  String?  @db.VarChar(255) // För MODEL_OPTIONS (brand -> models)
-  source    String?  @default("enum") @db.VarChar(50)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([name, enumType, parentId])
-  @@index([enumType])
-  @@index([parentId])
 }
 
 enum EquipmentBin {
