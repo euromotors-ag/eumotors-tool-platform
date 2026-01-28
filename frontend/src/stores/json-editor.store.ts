@@ -10,6 +10,8 @@ import {
   EquipmentValidationResult,
   EquipmentItem,
 } from "../types/json-editor.types";
+import { equipmentApi } from "../api/equipment.api";
+import { saveChange, removeChange } from "../utils/equipment-changes-manager";
 
 interface FileData {
   fileName: string;
@@ -55,6 +57,19 @@ interface JsonEditorState {
     addedCodes: Set<string>;
     // Set of codes marked as trash in this session
     trashedCodes: Set<string>;
+    // Action history for undo functionality (JSON-specific)
+    actionHistory: Array<{
+      id: string;
+      type: "ADD" | "MAP" | "TRASH";
+      timestamp: number;
+      rawValue: string;
+      targetValue?: string | string[]; // For MAP: canonical code(s), for ADD: equipment name
+      equipmentId?: string; // For ADD/MAP: equipment ID
+      equipmentName?: string; // For ADD: equipment name
+      sourceSystem: string;
+      fileName: string; // Which JSON file this action belongs to
+      undone?: boolean;
+    }>;
   };
 
   // Actions
@@ -98,6 +113,26 @@ interface JsonEditorState {
   recordEquipmentMapping: (rawCode: string, canonicalCode: string | string[]) => void;
   recordEquipmentAdded: (code: string) => void;
   recordEquipmentTrashed: (code: string) => void;
+  recordEquipmentAction: (
+    type: "ADD" | "MAP" | "TRASH",
+    rawValue: string,
+    targetValue?: string | string[],
+    equipmentId?: string,
+    equipmentName?: string
+  ) => void;
+  undoEquipmentAction: (actionId: string) => Promise<void>;
+  getEquipmentActionHistory: (fileName: string) => Array<{
+    id: string;
+    type: "ADD" | "MAP" | "TRASH";
+    timestamp: number;
+    rawValue: string;
+    targetValue?: string | string[];
+    equipmentId?: string;
+    equipmentName?: string;
+    sourceSystem: string;
+    fileName: string;
+  }>;
+  clearEquipmentActionHistory: (fileName: string) => void;
 
   // Computed
   isDirty: () => boolean;
@@ -245,6 +280,7 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
     mappedCodes: {}, // Record<string, string | string[]>
     addedCodes: new Set<string>(),
     trashedCodes: new Set<string>(),
+    actionHistory: [], // Array of actions for undo functionality
   },
 
   loadFiles: (
@@ -1368,6 +1404,22 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
     const validationState: Record<string, EquipmentValidationResult> = {};
     const unknownEquipment: string[] = [];
     
+    // Performance optimization: Create Map for O(1) dictionary lookups by name
+    const dictionaryByName = new Map<string, EquipmentItem>();
+    Object.values(dictionary).forEach((item) => {
+      dictionaryByName.set(item.name.toUpperCase(), item);
+    });
+    
+    // Performance optimization: Create Map for normalized code lookups
+    const dictionaryByCode = new Map<string, EquipmentItem>();
+    Object.entries(dictionary).forEach(([code, item]) => {
+      const normalized = code.toUpperCase();
+      dictionaryByCode.set(normalized, item);
+      // Also add normalized versions
+      dictionaryByCode.set(normalized.replace(/[\s\-]/g, "_"), item);
+      dictionaryByCode.set(normalized.replace(/[_\-]/g, " "), item);
+    });
+    
     // First, filter out trash equipment from the input array
     const nonTrashEquipment = equipment.filter((code) => {
       const codeUpper = code.toUpperCase();
@@ -1385,7 +1437,7 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
 
     // Validate only non-trash equipment
     for (const code of nonTrashEquipment) {
-      // Preserve custom status if already set
+      // Preserve custom status if already set (early return for performance)
       const existingStatus = state.validationState[code]?.status;
       if (existingStatus === "custom") {
         validationState[code] = {
@@ -1395,45 +1447,12 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
         continue;
       }
 
-      // 2. Check if code is mapped to another code (session overlay)
-      if (overlay.mappedCodes[code]) {
-        const mappedName = overlay.mappedCodes[code]; // This is an equipment NAME, not code
-        // Check if mapped name exists in dictionary (search by name in values)
-        // dictionary is indexed by code, so we need to search values
-        const equipmentExists = Object.values(dictionary).some(
-          (item) => item.name === mappedName
-        );
-        if (equipmentExists || overlay.addedCodes.has(mappedName)) {
-          validationState[code] = {
-            code,
-            status: "valid",
-          };
-          continue;
-        }
-      }
-
-      // 3. Check if code was added to database in this session
-      if (overlay.addedCodes.has(code)) {
-        validationState[code] = {
-          code,
-          status: "valid",
-        };
-        continue;
-      }
-
-      // 4. Check dictionary mappings (from database)
-      // Dictionary mappings now map to equipment name (not code)
-      // Normalize code to uppercase for lookup (handles both "12-VOLT SOCKET" and "12_VOLT_SOCKET")
-      const codeUpper2 = code.toUpperCase();
-      const underscoreVersion2 = codeUpper2.replace(/[\s\-]/g, "_");
-      
-      const mappedEquipmentName = dictionaryMappings[codeUpper2] || dictionaryMappings[underscoreVersion2];
-      if (mappedEquipmentName) {
-        // Check if equipment name exists in dictionary (search by name in values)
-        // dictionary is indexed by code, so we need to search values
-        const equipmentExists = Object.values(dictionary).some(
-          (item) => item.name === mappedEquipmentName
-        );
+      // 2. Check if code is mapped to another code (session overlay) - O(1) lookup
+      const mappedValue = overlay.mappedCodes[code];
+      if (mappedValue) {
+        const mappedName = Array.isArray(mappedValue) ? mappedValue[0] : mappedValue;
+        // O(1) lookup in Map instead of O(n) search
+        const equipmentExists = dictionaryByName.has(mappedName.toUpperCase()) || overlay.addedCodes.has(mappedName);
         if (equipmentExists) {
           validationState[code] = {
             code,
@@ -1443,31 +1462,50 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
         }
       }
 
-      // 5. Fall back to dictionary lookup
-      // Check both by code (if code is used) and by name
-      if (dictionary[code]) {
+      // 3. Check if code was added to database in this session - O(1) Set lookup
+      if (overlay.addedCodes.has(code)) {
+        validationState[code] = {
+          code,
+          status: "valid",
+        };
+        continue;
+      }
+
+      // 4. Check dictionary mappings (from database) - O(1) Map lookup
+      const codeUpper2 = code.toUpperCase();
+      const underscoreVersion2 = codeUpper2.replace(/[\s\-]/g, "_");
+      
+      const mappedEquipmentName = dictionaryMappings[codeUpper2] || dictionaryMappings[underscoreVersion2];
+      if (mappedEquipmentName) {
+        const mappedName = Array.isArray(mappedEquipmentName) ? mappedEquipmentName[0] : mappedEquipmentName;
+        // O(1) lookup in Map instead of O(n) search
+        const equipmentExists = dictionaryByName.has(mappedName.toUpperCase());
+        if (equipmentExists) {
+          validationState[code] = {
+            code,
+            status: "valid",
+          };
+          continue;
+        }
+      }
+
+      // 5. Fall back to dictionary lookup - O(1) Map lookup
+      const dictItem = dictionaryByCode.get(codeUpper2) || 
+                       dictionaryByCode.get(underscoreVersion2) ||
+                       dictionaryByName.get(codeUpper2);
+      
+      if (dictItem) {
         validationState[code] = {
           code,
           status: "valid",
         };
       } else {
-        // Also check if code matches an equipment name
-        const equipmentByName = Object.values(dictionary).find(
-          (item) => item.name === code
-        );
-        if (equipmentByName) {
-          validationState[code] = {
-            code,
-            status: "valid",
-          };
-        } else {
-          validationState[code] = {
-            code,
-            status: "unknown",
-            reason: "Not found in equipment dictionary",
-          };
-          unknownEquipment.push(code);
-        }
+        validationState[code] = {
+          code,
+          status: "unknown",
+          reason: "Not found in equipment dictionary",
+        };
+        unknownEquipment.push(code);
       }
     }
 
@@ -1653,6 +1691,358 @@ export const useJsonEditorStore = create<JsonEditorState>((set, get) => ({
         get().validateEquipment(state.workingJson.equipment);
       }
     }
+  },
+
+  recordEquipmentAction: (
+    type: "ADD" | "MAP" | "TRASH",
+    rawValue: string,
+    targetValue?: string | string[],
+    equipmentId?: string,
+    equipmentName?: string
+  ) => {
+    const state = get();
+    if (!state.activeFileName) return;
+
+    const action = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type,
+      timestamp: Date.now(),
+      rawValue: rawValue.toUpperCase().trim(),
+      targetValue,
+      equipmentId,
+      equipmentName,
+      sourceSystem: "json-editor",
+      fileName: state.activeFileName,
+      undone: false,
+    };
+
+    // Update Zustand store immediately (optimistic update)
+    set({
+      equipmentOverlay: {
+        ...state.equipmentOverlay,
+        actionHistory: [...state.equipmentOverlay.actionHistory, action],
+      },
+    });
+
+    // Save to local storage (debounced, non-blocking)
+    saveChange(state.activeFileName, {
+      id: action.id,
+      type: action.type,
+      rawValue: action.rawValue,
+      targetValue: action.targetValue,
+      equipmentId: action.equipmentId,
+      equipmentName: action.equipmentName,
+      timestamp: action.timestamp,
+    });
+  },
+
+  undoEquipmentAction: async (actionId: string) => {
+    const state = get();
+    const action = state.equipmentOverlay.actionHistory.find(
+      (a) => a.id === actionId && !a.undone
+    );
+
+    if (!action) return;
+
+    try {
+      // Optimistic update: Update Zustand store immediately (0ms delay)
+      // No API calls - changes are only synced to database on Save
+      
+      if (action.type === "MAP") {
+        // IMPORTANT: Remove from overlay FIRST, before updating JSON
+        // This ensures validation sees the correct state
+        const overlay = state.equipmentOverlay;
+        const newMappedCodes = { ...overlay.mappedCodes };
+        delete newMappedCodes[action.rawValue];
+        
+        // Update overlay FIRST
+        set({
+          equipmentOverlay: {
+            ...overlay,
+            mappedCodes: newMappedCodes,
+          },
+        });
+
+        // Now restore original raw value in ALL files (since mappedCodes affects all files)
+        // We need to remove mapped values and restore raw value in all files that have them
+        const newFilesMap = new Map(state.files);
+        let hasUpdates = false;
+        const targetValues = Array.isArray(action.targetValue)
+          ? action.targetValue
+          : [action.targetValue!];
+        const rawValueUpper = action.rawValue.toUpperCase().trim();
+        const rawValueNormalized = rawValueUpper.replace(/[\s\-_]/g, "");
+
+        // Go through ALL files and restore the original raw value
+        newFilesMap.forEach((fileData, fileName) => {
+          const equipmentArray = fileData.workingJson.equipment || [];
+          const originalEquipment = fileData.originalJson?.equipment || [];
+          
+          // Check if any mapped values exist in this file
+          const hasMappedValues = targetValues.some((targetValue) => 
+            equipmentArray.includes(targetValue)
+          );
+          
+          // Check if original raw value already exists
+          const hasRawValue = equipmentArray.some((eq) => {
+            const eqUpper = eq.toUpperCase().trim();
+            const eqNormalized = eqUpper.replace(/[\s\-_]/g, "");
+            return eqNormalized === rawValueNormalized || eq === action.rawValue;
+          });
+          
+          if (hasMappedValues || (!hasRawValue && fileName === action.fileName)) {
+            // For each mapped value, check if it existed in originalJson
+            // Only remove values that were ADDED by the mapping, not values that already existed
+            let updatedEquipment = equipmentArray.filter((code) => {
+              // If this is a mapped value, check if it existed in originalJson
+              if (targetValues.includes(code)) {
+                // Check if this value existed in originalJson (normalized comparison)
+                const codeUpper = code.toUpperCase().trim();
+                const codeNormalized = codeUpper.replace(/[\s\-_]/g, "");
+                const existedInOriginal = originalEquipment.some((origEq) => {
+                  const origUpper = origEq.toUpperCase().trim();
+                  const origNormalized = origUpper.replace(/[\s\-_]/g, "");
+                  return origNormalized === codeNormalized || origUpper === codeUpper || origEq === code;
+                });
+                
+                // Only remove if it didn't exist in originalJson (was added by mapping)
+                return existedInOriginal; // Keep if existed in original, remove if didn't exist
+              }
+              // Keep all non-mapped values
+              return true;
+            });
+            
+            // Add back the original raw value if it's not already there
+            if (!hasRawValue) {
+              updatedEquipment.push(action.rawValue);
+            }
+
+            const updatedJson = {
+              ...fileData.workingJson,
+              equipment: updatedEquipment,
+            };
+
+            newFilesMap.set(fileName, {
+              ...fileData,
+              workingJson: updatedJson,
+            });
+            hasUpdates = true;
+
+            // Update active file if it's the one being modified
+            if (state.activeFileName === fileName) {
+              set({ workingJson: updatedJson });
+              // Validate AFTER overlay is updated - this ensures value is seen as unknown
+              get().validateEquipment(updatedEquipment);
+            }
+          } else if (state.activeFileName === fileName) {
+            // Value already exists - just re-validate to update status
+            get().validateEquipment(equipmentArray);
+          }
+        });
+
+        if (hasUpdates) {
+          set({ files: newFilesMap });
+        }
+      } else if (action.type === "ADD") {
+        // IMPORTANT: Remove from overlay FIRST, before updating JSON
+        // This ensures validation sees the correct state
+        const overlay = state.equipmentOverlay;
+        const newAddedCodes = new Set(overlay.addedCodes);
+        newAddedCodes.delete(action.rawValue);
+        
+        // Update overlay FIRST
+        set({
+          equipmentOverlay: {
+            ...overlay,
+            addedCodes: newAddedCodes,
+          },
+        });
+
+        // Now restore original rawValue to ALL files (since addedCodes affects all files)
+        // We need to restore it in all files, not just the one where the action was created
+        const newFilesMap = new Map(state.files);
+        let hasUpdates = false;
+        const rawValueUpper = action.rawValue.toUpperCase().trim();
+        const rawValueNormalized = rawValueUpper.replace(/[\s\-_]/g, "");
+        const equipmentNameToRemove = action.equipmentName || action.rawValue;
+
+        // Go through ALL files and restore the original rawValue
+        newFilesMap.forEach((fileData, fileName) => {
+          const equipmentArray = fileData.workingJson.equipment || [];
+          
+          // Check if rawValue already exists (in any format - with spaces, underscores, etc.)
+          const rawValueExists = equipmentArray.some((eq) => {
+            const eqUpper = eq.toUpperCase().trim();
+            const eqNormalized = eqUpper.replace(/[\s\-_]/g, "");
+            return eqNormalized === rawValueNormalized;
+          });
+          
+          // If rawValue doesn't exist, check if it was in the original JSON (meaning it was changed when added)
+          // OR if this is the file where the action was created, always restore it
+          const wasInOriginal = fileData.originalJson?.equipment?.some((eq) => {
+            const eqUpper = eq.toUpperCase().trim();
+            const eqNormalized = eqUpper.replace(/[\s\-_]/g, "");
+            return eqNormalized === rawValueNormalized;
+          });
+          
+          if (!rawValueExists && (wasInOriginal || fileName === action.fileName)) {
+            // Remove equipmentName if it exists and is different from rawValue
+            let updatedEquipment = equipmentArray.filter((code) => {
+              // If this is equipmentName, check if it's different from rawValue
+              if (code === equipmentNameToRemove || code.toUpperCase() === equipmentNameToRemove.toUpperCase()) {
+                const codeUpper = code.toUpperCase().trim();
+                const codeNormalized = codeUpper.replace(/[\s\-_]/g, "");
+                // Keep it only if it's the same as rawValue (normalized)
+                return codeNormalized === rawValueNormalized;
+              }
+              return true;
+            });
+            
+            // Add back the original rawValue
+            updatedEquipment.push(action.rawValue);
+            
+            const updatedJson = {
+              ...fileData.workingJson,
+              equipment: updatedEquipment,
+            };
+
+            newFilesMap.set(fileName, {
+              ...fileData,
+              workingJson: updatedJson,
+            });
+            hasUpdates = true;
+
+            // Update active file if it's the one being modified
+            if (state.activeFileName === fileName) {
+              set({ workingJson: updatedJson });
+              // Validate AFTER overlay is updated - this ensures value is seen as unknown
+              get().validateEquipment(updatedEquipment);
+            }
+          } else if (state.activeFileName === fileName) {
+            // Value already exists - just re-validate to update status
+            get().validateEquipment(equipmentArray);
+          }
+        });
+
+        if (hasUpdates) {
+          set({ files: newFilesMap });
+        }
+      } else if (action.type === "TRASH") {
+        // IMPORTANT: Remove from overlay sets FIRST, before adding back to JSON
+        // This ensures validation sees the correct state
+        const overlay = state.equipmentOverlay;
+        const newTrashedCodes = new Set(overlay.trashedCodes);
+        newTrashedCodes.delete(action.rawValue);
+        const newAddedCodes = new Set(overlay.addedCodes);
+        newAddedCodes.delete(action.rawValue);
+        const newMappedCodes = { ...overlay.mappedCodes };
+        delete newMappedCodes[action.rawValue];
+        
+        // Update overlay FIRST
+        set({
+          equipmentOverlay: {
+            ...overlay,
+            trashedCodes: newTrashedCodes,
+            addedCodes: newAddedCodes,
+            mappedCodes: newMappedCodes,
+          },
+        });
+
+        // Now re-add original rawValue to ALL files that had it (since trashedCodes affects all files)
+        // We need to restore it in all files, not just the one where the action was created
+        const newFilesMap = new Map(state.files);
+        let hasUpdates = false;
+        const rawValueUpper = action.rawValue.toUpperCase().trim();
+        const rawValueNormalized = rawValueUpper.replace(/[\s\-_]/g, "");
+
+        // Go through ALL files and add back the value if it's missing
+        newFilesMap.forEach((fileData, fileName) => {
+          const equipmentArray = fileData.workingJson.equipment || [];
+          
+          // Check if value already exists (in any format - with spaces, underscores, etc.)
+          const valueExists = equipmentArray.some((eq) => {
+            const eqUpper = eq.toUpperCase().trim();
+            const eqNormalized = eqUpper.replace(/[\s\-_]/g, "");
+            return eqNormalized === rawValueNormalized;
+          });
+          
+          // If value doesn't exist, check if it was in the original JSON (meaning it was removed when trashed)
+          // OR if this is the file where the action was created, always add it back
+          const wasInOriginal = fileData.originalJson?.equipment?.some((eq) => {
+            const eqUpper = eq.toUpperCase().trim();
+            const eqNormalized = eqUpper.replace(/[\s\-_]/g, "");
+            return eqNormalized === rawValueNormalized;
+          });
+          
+          if (!valueExists && (wasInOriginal || fileName === action.fileName)) {
+            const updatedEquipment = [...equipmentArray, action.rawValue];
+            const updatedJson = {
+              ...fileData.workingJson,
+              equipment: updatedEquipment,
+            };
+
+            newFilesMap.set(fileName, {
+              ...fileData,
+              workingJson: updatedJson,
+            });
+            hasUpdates = true;
+
+            // Update active file if it's the one being modified
+            if (state.activeFileName === fileName) {
+              set({ workingJson: updatedJson });
+              // Validate AFTER overlay is updated - this ensures value is seen as unknown
+              get().validateEquipment(updatedEquipment);
+            }
+          } else if (valueExists && state.activeFileName === fileName) {
+            // Value already exists - just re-validate to update status
+            get().validateEquipment(equipmentArray);
+          }
+        });
+
+        if (hasUpdates) {
+          set({ files: newFilesMap });
+        }
+      }
+
+      // Remove from local storage (debounced, non-blocking)
+      removeChange(action.fileName, actionId);
+
+      // Mark action as undone and remove from history
+      const overlay = get().equipmentOverlay;
+      set({
+        equipmentOverlay: {
+          ...overlay,
+          actionHistory: overlay.actionHistory.filter((a) => a.id !== actionId),
+        },
+      });
+    } catch (error) {
+      console.error("Failed to undo equipment action:", error);
+      throw error;
+    }
+  },
+
+  getEquipmentActionHistory: (fileName: string) => {
+    const state = get();
+    return state.equipmentOverlay.actionHistory
+      .filter((action) => action.fileName === fileName && !action.undone)
+      .sort((a, b) => b.timestamp - a.timestamp);
+  },
+
+  clearEquipmentActionHistory: (fileName: string) => {
+    const state = get();
+    const overlay = state.equipmentOverlay;
+    
+    // Remove all actions for this file from history
+    const filteredHistory = overlay.actionHistory.filter(
+      (action) => action.fileName !== fileName
+    );
+    
+    set({
+      equipmentOverlay: {
+        ...overlay,
+        actionHistory: filteredHistory,
+      },
+    });
   },
 
   isDirty: () => {

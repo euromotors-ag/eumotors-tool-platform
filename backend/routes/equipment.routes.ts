@@ -29,8 +29,17 @@ router.post("/approve", equipmentController.approveAsNewCanonical);
 // POST /api/v1/equipment/map - Map unknown to existing canonical
 router.post("/map", equipmentController.mapToExistingCanonical);
 
+// DELETE /api/v1/equipment/map - Delete mapping (undo mapping action)
+router.delete("/map", equipmentController.deleteMapping);
+
 // POST /api/v1/equipment/trash - Mark equipment as trash
 router.post("/trash", equipmentController.markAsTrash);
+
+// POST /api/v1/equipment/restore - Restore equipment from trash (undo trash action)
+router.post("/restore", equipmentController.restoreFromTrash);
+
+// POST /api/v1/equipment/batch-sync - Batch sync equipment changes (ADD, MAP, TRASH)
+router.post("/batch-sync", equipmentController.batchSync);
 
 // GET /api/v1/equipment/canonical/all - Get all canonical equipment
 router.get("/canonical/all", equipmentController.getAllCanonical);

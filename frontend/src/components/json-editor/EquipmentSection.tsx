@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback, memo } from "react";
 import {
   Plus,
   X,
@@ -13,13 +13,23 @@ import {
 import { useJsonEditorStore } from "../../stores/json-editor.store";
 import { EquipmentItem } from "../../types/json-editor.types";
 import { equipmentApi } from "../../api/equipment.api";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import {
+  saveChange,
+  removeChange,
+  initializeCache,
+} from "../../utils/equipment-changes-manager";
 
 interface EquipmentSectionProps {
   dictionary: Record<string, EquipmentItem>;
 }
 
-export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
+// Initialize cache on module load
+if (typeof window !== "undefined") {
+  initializeCache();
+}
+
+function EquipmentSectionComponent({ dictionary }: EquipmentSectionProps) {
   const workingJson = useJsonEditorStore((state) => state.workingJson);
   const validationState = useJsonEditorStore((state) => state.validationState);
   const unknownEquipment = useJsonEditorStore(
@@ -43,6 +53,16 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
   const recordEquipmentTrashed = useJsonEditorStore(
     (state) => state.recordEquipmentTrashed
   );
+  const recordEquipmentAction = useJsonEditorStore(
+    (state) => state.recordEquipmentAction
+  );
+  const undoEquipmentAction = useJsonEditorStore(
+    (state) => state.undoEquipmentAction
+  );
+  const getEquipmentActionHistory = useJsonEditorStore(
+    (state) => state.getEquipmentActionHistory
+  );
+  const fileName = useJsonEditorStore((state) => state.fileName);
   const equipmentOverlay = useJsonEditorStore(
     (state) => state.equipmentOverlay
   );
@@ -53,13 +73,12 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
   const [newCode, setNewCode] = useState("");
   const [customCode, setCustomCode] = useState("");
   const [newDatabaseCode, setNewDatabaseCode] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | "valid" | "unknown">(
+  const [activeTab, setActiveTab] = useState<"all" | "valid" | "unknown" | "undo">(
     "all"
   );
   const [mappingCode, setMappingCode] = useState<string | null>(null);
   const [mappingSearch, setMappingSearch] = useState("");
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([]);
-  const queryClient = useQueryClient();
 
   // Block body scroll when mapping modal is open
   useEffect(() => {
@@ -98,7 +117,7 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
     };
   }, [mappingCode]);
 
-  const equipment = workingJson?.equipment || [];
+  const equipment = useMemo(() => workingJson?.equipment || [], [workingJson?.equipment]);
 
   // Normalize equipment: map raw codes to canonical names for display
   // Structure: { displayCode: string, rawCodes: string[], isMapped: boolean }
@@ -112,6 +131,7 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
     // First, collect all raw codes that map to each name from dictionary mappings
     // This creates a reverse lookup: name -> [raw codes]
     // Handle both single mapping (string) and multi-mapping (string[])
+    // NOTE: ADD actions no longer create mappings (fixed in backend), so all mappings here are from MAP actions
     Object.entries(dictionaryMappings).forEach(([rawValue, mappedValue]) => {
       const names = Array.isArray(mappedValue) ? mappedValue : [mappedValue];
       names.forEach((name) => {
@@ -124,6 +144,7 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
 
     // Also check session overlay mappings (these take precedence)
     // Handle both single mapping (string) and multi-mapping (string[])
+    // These are always from MAP actions, so we include them
     Object.entries(equipmentOverlay.mappedCodes).forEach(([rawCode, mappedValue]) => {
       const names = Array.isArray(mappedValue) ? mappedValue : [mappedValue];
       names.forEach((name) => {
@@ -199,6 +220,9 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
         const status = validationState[item.displayCode]?.status || "unknown";
         return status === "unknown";
       });
+    } else if (activeTab === "undo") {
+      // Undo tab doesn't use filteredEquipment, it uses action history
+      filtered = [];
     }
 
     // Filter by search query
@@ -215,11 +239,6 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
 
     return filtered;
   }, [normalizedEquipment, searchQuery, activeTab, validationState]);
-
-  // Get available equipment codes for autocomplete
-  const availableCodes = useMemo(() => {
-    return Object.keys(dictionary).sort();
-  }, [dictionary]);
 
   // Get available equipment items sorted by name for dropdown display
   const availableEquipmentItems = useMemo(() => {
@@ -250,7 +269,8 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
   });
 
   // Handle add new equipment to database (from input field)
-  const handleAddNewToDatabase = async () => {
+  // Optimistic update: Update UI immediately, save to local storage
+  const handleAddNewToDatabase = useCallback(async () => {
     if (!newDatabaseCode.trim()) return;
     
     try {
@@ -263,34 +283,48 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
         return;
       }
 
-      // Add to database as new canonical equipment
-      await equipmentApi.approveAsNewCanonical(
-        code,
-        "json-editor"
-      );
+      // Generate action ID
+      const actionId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-      // Record in session overlay (immediate effect across all files)
+      // Optimistic update: Update Zustand store immediately (0ms delay)
       recordEquipmentAdded(code);
+
+      // Record action in store for undo
+      if (fileName) {
+        recordEquipmentAction(
+          "ADD",
+          code,
+          code, // equipmentName (will be set after batch sync)
+          undefined, // equipmentId (will be set after batch sync)
+          code
+        );
+
+        // Save to local storage (debounced, non-blocking)
+        saveChange(fileName, {
+          id: actionId,
+          type: "ADD",
+          rawValue: code,
+          targetValue: code,
+          equipmentId: undefined,
+          equipmentName: code,
+          timestamp: Date.now(),
+        });
+      }
 
       // Add to current JSON
       addEquipment(code);
 
       // Clear input
       setNewDatabaseCode("");
-
-      // Invalidate dictionary cache to refresh
-      queryClient.invalidateQueries({ queryKey: ["equipment-dictionary"] });
-      // Also invalidate canonical equipment cache so mapping modal updates
-      queryClient.invalidateQueries({ queryKey: ["canonical-equipment"] });
     } catch (error) {
-      console.error("Failed to add equipment to database:", error);
+      console.error("Failed to add equipment:", error);
       alert(
-        `Failed to add equipment to database: ${
+        `Failed to add equipment: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
     }
-  };
+  }, [newDatabaseCode, canonicalEquipment, fileName, recordEquipmentAdded, recordEquipmentAction, addEquipment]);
 
   const getValidationStatus = (code: string) => {
     return validationState[code]?.status || "unknown";
@@ -305,48 +339,56 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
   };
 
   // Handle add to database (for unknown equipment items)
-  const handleAddToDatabase = async (code: string) => {
+  // Optimistic update: Update UI immediately, save to local storage
+  const handleAddToDatabase = useCallback(async (code: string) => {
     try {
       // Convert code (e.g., "BLACK_ROOF_RAILS") to name format (e.g., "BLACK ROOF RAILS")
       const name = code.replace(/_/g, " ").toUpperCase();
 
-      await equipmentApi.createEquipment({
-        name: name,
-        binCategory: "bin_good",
-        source: "json-editor",
-      });
+      // Generate action ID
+      const actionId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-      // Record in session overlay (immediate effect across all files)
+      // Optimistic update: Update Zustand store immediately (0ms delay)
       recordEquipmentAdded(code);
 
-      // Invalidate dictionary cache to refresh (for future sessions)
-      queryClient.invalidateQueries({ queryKey: ["equipment-dictionary"] });
-      // Also invalidate canonical equipment cache so mapping modal updates
-      queryClient.invalidateQueries({ queryKey: ["canonical-equipment"] });
+      // Record action in store for undo
+      if (fileName) {
+        recordEquipmentAction(
+          "ADD",
+          code,
+          name, // equipmentName
+          undefined, // equipmentId (will be set after batch sync)
+          name
+        );
+
+        // Save to local storage (debounced, non-blocking)
+        saveChange(fileName, {
+          id: actionId,
+          type: "ADD",
+          rawValue: code,
+          targetValue: name,
+          equipmentId: undefined,
+          equipmentName: name,
+          timestamp: Date.now(),
+        });
+      }
     } catch (error) {
-      console.error("Failed to add equipment to database:", error);
+      console.error("Failed to add equipment:", error);
       alert(
         `Failed to add equipment: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
     }
-  };
+  }, [fileName, recordEquipmentAdded, recordEquipmentAction]);
 
   // Handle map to existing (supports both single and multi-mapping)
-  const handleMapToExisting = async (
+  // Optimistic update: Update UI immediately, save to local storage
+  const handleMapToExisting = useCallback(async (
     unknownCode: string,
     targetEquipmentIds: string[]
   ) => {
     try {
-      // Call API with array of equipment IDs
-      await equipmentApi.mapToExistingCanonical(
-        unknownCode,
-        "json-editor",
-        targetEquipmentIds[0], // Backward compatibility: first ID
-        targetEquipmentIds // Multi-mapping: array of IDs
-      );
-
       // Find all target equipment items
       const targetEquipmentItems = canonicalEquipment.filter(
         (e) => targetEquipmentIds.includes(e.id)
@@ -356,9 +398,34 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
         // Use equipment names (not codes) - names are what should appear in JSON
         const targetNames = targetEquipmentItems.map(e => e.name);
         
-        // Record mapping in session overlay (immediate effect across all files)
+        // Optimistic update: Update Zustand store immediately (0ms delay)
         // For multi-mapping, pass array of names
-        recordEquipmentMapping(unknownCode, targetNames.length > 1 ? targetNames : targetNames[0]);
+        const mappedValue = targetNames.length > 1 ? targetNames : targetNames[0];
+        recordEquipmentMapping(unknownCode, mappedValue);
+        
+        // Generate action ID
+        const actionId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Record action in store for undo
+        if (fileName) {
+          recordEquipmentAction(
+            "MAP",
+            unknownCode,
+            mappedValue,
+            targetEquipmentIds[0]
+          );
+
+          // Save to local storage (debounced, non-blocking)
+          saveChange(fileName, {
+            id: actionId,
+            type: "MAP",
+            rawValue: unknownCode,
+            targetValue: mappedValue,
+            equipmentId: targetEquipmentIds[0],
+            equipmentName: undefined,
+            timestamp: Date.now(),
+          });
+        }
         
         // For single mapping, also call mapEquipment for consistency
         // For multi-mapping, recordEquipmentMapping already expanded it to all names
@@ -366,11 +433,6 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
           mapEquipment(unknownCode, targetNames[0]);
         }
       }
-
-      // Invalidate dictionary cache (for future sessions)
-      queryClient.invalidateQueries({ queryKey: ["equipment-dictionary"] });
-      // Also invalidate canonical equipment cache so mapping modal updates
-      queryClient.invalidateQueries({ queryKey: ["canonical-equipment"] });
       
       // Close modal and reset selection
       setMappingCode(null);
@@ -384,29 +446,37 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
         }`
       );
     }
-  };
+  }, [canonicalEquipment, fileName, recordEquipmentMapping, recordEquipmentAction, mapEquipment]);
 
   // Handle add to trash
-  const handleAddToTrash = async (code: string) => {
+  // Optimistic update: Update UI immediately, save to local storage
+  const handleAddToTrash = useCallback(async (code: string) => {
     try {
-      // Convert code to name format for API
-      const name = code.replace(/_/g, " ").toUpperCase();
-      await equipmentApi.markAsTrash(
-        name,
-        "json-editor",
-        "Marked as trash from JSON editor"
-      );
 
-      // Record in session overlay (immediate effect across all files)
+      // Generate action ID
+      const actionId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      // Optimistic update: Update Zustand store immediately (0ms delay)
       recordEquipmentTrashed(code);
+
+      // Record action in store for undo
+      if (fileName) {
+        recordEquipmentAction("TRASH", code);
+
+        // Save to local storage (debounced, non-blocking)
+        saveChange(fileName, {
+          id: actionId,
+          type: "TRASH",
+          rawValue: code,
+          targetValue: undefined,
+          equipmentId: undefined,
+          equipmentName: undefined,
+          timestamp: Date.now(),
+        });
+      }
 
       // Remove from equipment list in JSON
       removeEquipment(code);
-
-      // Invalidate dictionary cache (for future sessions)
-      queryClient.invalidateQueries({ queryKey: ["equipment-dictionary"] });
-      // Also invalidate canonical equipment cache so mapping modal updates
-      queryClient.invalidateQueries({ queryKey: ["canonical-equipment"] });
     } catch (error) {
       console.error("Failed to add equipment to trash:", error);
       alert(
@@ -415,7 +485,7 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
         }`
       );
     }
-  };
+  }, [fileName, recordEquipmentTrashed, recordEquipmentAction, removeEquipment]);
 
   return (
     <div className="relative overflow-hidden rounded-xl bg-card p-4 shadow-lg border border-border">
@@ -448,8 +518,7 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
                 }`}>
                 <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
                 Valid ({normalizedEquipment.filter((item) => {
-                  const firstRawCode = item.rawCodes[0];
-                  const status = validationState[firstRawCode]?.status || "unknown";
+                  const status = validationState[item.displayCode]?.status || "unknown";
                   return status === "valid" || status === "custom";
                 }).length})
               </button>
@@ -463,6 +532,17 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
                 <div className="w-1.5 h-1.5 rounded-full bg-yellow-400"></div>
                 Unknown ({unknownEquipment.length})
               </button>
+              {fileName && (
+                <button
+                  onClick={() => setActiveTab("undo")}
+                  className={`px-2 py-0.5 text-xs rounded transition-all flex items-center gap-1 ${
+                    activeTab === "undo"
+                      ? "bg-gray-700 text-gray-200 border border-gray-600"
+                      : "text-gray-400 hover:text-gray-300 hover:bg-gray-800/50"
+                  }`}>
+                  Undo ({fileName ? getEquipmentActionHistory(fileName).length : 0})
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -545,8 +625,91 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
         </div>
 
         {/* Equipment list */}
-        <div className="border border-gray-700 rounded max-h-64 overflow-y-auto bg-gray-800/40">
-          {filteredEquipment.length === 0 ? (
+        <div className="border border-gray-700 rounded min-h-64 max-h-64 overflow-y-auto bg-gray-800/40">
+          {activeTab === "undo" ? (
+            fileName ? (
+              (() => {
+                const actionHistory = getEquipmentActionHistory(fileName);
+                return actionHistory.length === 0 ? (
+                  <div className="p-2 text-center text-gray-500 text-xs">
+                    No actions to undo
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-700">
+                    {actionHistory.map((action) => (
+                      <div
+                        key={action.id}
+                        className="p-2 flex items-center justify-between hover:bg-gray-700/50 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-gray-200">
+                            {action.type === "ADD" && (
+                              <span className="text-green-400">Added:</span>
+                            )}
+                            {action.type === "MAP" && (
+                              <span className="text-blue-400">Mapped:</span>
+                            )}
+                            {action.type === "TRASH" && (
+                              <span className="text-red-400">Trashed:</span>
+                            )}{" "}
+                            <span className="font-mono">{action.rawValue}</span>
+                            {action.type === "MAP" && action.targetValue && (
+                              <span className="text-gray-400 ml-1">
+                                → {Array.isArray(action.targetValue) ? action.targetValue.join(", ") : action.targetValue}
+                              </span>
+                            )}
+                            {action.type === "ADD" && action.equipmentName && (
+                              <span className="text-gray-400 ml-1">
+                                ({action.equipmentName})
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {new Date(action.timestamp).toLocaleTimeString()}
+                          </div>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            try {
+                              // Optimistic update: Update Zustand store immediately (0ms delay)
+                              await undoEquipmentAction(action.id);
+                              
+                              // Remove from local storage (debounced, non-blocking)
+                              // Note: undoEquipmentAction already handles this, but we do it here too for safety
+                              if (fileName) {
+                                removeChange(fileName, action.id);
+                              }
+                              
+                              // Force re-validation after a small delay to ensure state is updated
+                              setTimeout(() => {
+                                const store = useJsonEditorStore.getState();
+                                if (store.workingJson?.equipment) {
+                                  // Re-validate with current equipment array
+                                  store.validateEquipment(store.workingJson.equipment);
+                                }
+                              }, 50);
+                            } catch (error) {
+                              console.error("Failed to undo action:", error);
+                              alert(
+                                `Failed to undo action: ${
+                                  error instanceof Error ? error.message : String(error)
+                                }`
+                              );
+                            }
+                          }}
+                          className="ml-2 px-2 py-1 text-xs bg-orange-600/50 hover:bg-orange-600/70 text-orange-200 rounded border border-orange-500/50 transition-all">
+                          Undo
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="p-2 text-center text-gray-500 text-xs">
+                No file selected
+              </div>
+            )
+          ) : filteredEquipment.length === 0 ? (
             <div className="p-2 text-center text-gray-500 text-xs">
               No equipment items
             </div>
@@ -592,7 +755,7 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
                 return (
                   <div
                     key={item.displayCode}
-                    className={`p-1.5 flex items-center justify-between hover:bg-gray-700/50 transition-colors ${
+                    className={`p-2.5 flex items-center justify-between hover:bg-gray-700/50 transition-colors ${
                       isUnknown
                         ? "bg-yellow-500/10"
                         : isCustom
@@ -636,15 +799,15 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
                       </div>
                     </div>
                     {/* Action buttons */}
-                    <div className="flex items-center gap-1 ml-1">
+                    <div className="flex items-center gap-2 ml-1">
                       {isUnknown && (
                         <>
                           {/* Add to Database */}
                           <button
                             onClick={() => handleAddToDatabase(firstRawCode)}
-                            className="p-0.5 text-green-400 hover:bg-green-500/20 rounded transition-all"
+                            className="p-1 text-green-400 hover:bg-green-500/20 rounded transition-all"
                             title="Add to Database">
-                            <Database className="h-3 w-3" />
+                            <Database className="h-4 w-4" />
                           </button>
 
                           {/* Map to Existing */}
@@ -652,29 +815,29 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
                             onClick={() =>
                               setMappingCode(mappingCode === firstRawCode ? null : firstRawCode)
                             }
-                            className={`p-0.5 rounded transition-all ${
+                            className={`p-1 rounded transition-all ${
                               mappingCode === firstRawCode
                                 ? "bg-blue-500/30 text-blue-300"
                                 : "text-blue-400 hover:bg-blue-500/20"
                             }`}
                             title="Map to Existing">
-                            <Link2 className="h-3 w-3" />
+                            <Link2 className="h-4 w-4" />
                           </button>
 
                           {/* Add to Trash */}
                           <button
                             onClick={() => handleAddToTrash(firstRawCode)}
-                            className="p-0.5 text-orange-400 hover:bg-orange-500/20 rounded transition-all"
+                            className="p-1 text-orange-400 hover:bg-orange-500/20 rounded transition-all"
                             title="Add to Trash">
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="h-4 w-4" />
                           </button>
 
                           {/* Mark as Custom (add to this JSON only) */}
                           <button
                             onClick={() => markEquipmentAsCustom(firstRawCode)}
-                            className="p-0.5 text-purple-400 hover:bg-purple-500/20 rounded transition-all"
+                            className="p-1 text-purple-400 hover:bg-purple-500/20 rounded transition-all"
                             title="Mark as custom (keep in this JSON only, not saved to database)">
-                            <CirclePlus className="h-3 w-3" />
+                            <CirclePlus className="h-4 w-4" />
                           </button>
                         </>
                       )}
@@ -685,11 +848,11 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
                           // Remove using displayCode (name) since equipment array contains names
                           removeEquipment(item.displayCode);
                         }}
-                        className="p-0.5 text-red-400 hover:bg-red-500/20 rounded transition-all"
+                        className="p-1 text-red-400 hover:bg-red-500/20 rounded transition-all"
                         title={item.isMapped && item.rawCodes.length > 1 
                           ? `Delete (mapped from: ${item.rawCodes.join(", ")})` 
                           : "Delete"}>
-                        <X className="h-3 w-3" />
+                        <X className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
@@ -869,3 +1032,6 @@ export function EquipmentSection({ dictionary }: EquipmentSectionProps) {
     </div>
   );
 }
+
+// Memoize component to prevent unnecessary re-renders
+export const EquipmentSection = memo(EquipmentSectionComponent);

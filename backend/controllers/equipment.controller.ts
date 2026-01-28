@@ -407,6 +407,104 @@ const getAllCanonical = async (
   }
 };
 
+/**
+ * Delete a mapping (undo mapping action)
+ */
+const deleteMapping = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { rawValue, sourceSystem } = req.body;
+
+    if (!rawValue || typeof rawValue !== "string") {
+      res.status(400).json({
+        status: "error",
+        message: "rawValue is required",
+      });
+      return;
+    }
+
+    if (!sourceSystem || typeof sourceSystem !== "string") {
+      res.status(400).json({
+        status: "error",
+        message: "sourceSystem is required",
+      });
+      return;
+    }
+
+    await equipmentAdminService.deleteMapping(rawValue, sourceSystem);
+    res.json({ status: "success", message: "Mapping deleted" });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+/**
+ * Restore equipment from trash (undo trash action)
+ */
+const restoreFromTrash = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { rawValue } = req.body;
+
+    if (!rawValue || typeof rawValue !== "string") {
+      res.status(400).json({
+        status: "error",
+        message: "rawValue is required",
+      });
+      return;
+    }
+
+    await equipmentAdminService.restoreFromTrash(rawValue);
+    res.json({ status: "success", message: "Equipment restored from trash" });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+/**
+ * Batch sync equipment changes (ADD, MAP, TRASH)
+ */
+const batchSync = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { changes, sourceSystem, createdBy } = req.body;
+
+    if (!changes || !Array.isArray(changes)) {
+      res.status(400).json({
+        status: "error",
+        message: "changes array is required",
+      });
+      return;
+    }
+
+    // Validate changes structure
+    for (const change of changes) {
+      if (!change.id || !change.type || !change.rawValue) {
+        res.status(400).json({
+          status: "error",
+          message: "Each change must have id, type, and rawValue",
+        });
+        return;
+      }
+
+      if (!["ADD", "MAP", "TRASH"].includes(change.type)) {
+        res.status(400).json({
+          status: "error",
+          message: `Invalid change type: ${change.type}. Must be ADD, MAP, or TRASH`,
+        });
+        return;
+      }
+    }
+
+    const result = await equipmentAdminService.batchSyncEquipment(
+      changes,
+      sourceSystem || "json-editor",
+      createdBy
+    );
+
+    res.json({ status: "success", data: result });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
 function handleError(error: unknown, res: Response): void {
   console.error("Equipment controller error:", error);
   const errorMessage =
@@ -432,4 +530,7 @@ export const equipmentController = {
   mapToExistingCanonical,
   markAsTrash,
   getAllCanonical,
+  deleteMapping,
+  restoreFromTrash,
+  batchSync,
 };

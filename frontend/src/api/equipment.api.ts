@@ -260,6 +260,70 @@ class EquipmentApi {
     }>(`${this.baseUrl}/canonical/all`);
     return response.data.data;
   }
+
+  /**
+   * Delete a mapping (undo mapping action)
+   */
+  async deleteMapping(rawValue: string, sourceSystem: string): Promise<void> {
+    await axios.delete(`${this.baseUrl}/map`, {
+      data: { rawValue, sourceSystem },
+    });
+  }
+
+  /**
+   * Restore equipment from trash (undo trash action)
+   */
+  async restoreFromTrash(rawValue: string): Promise<void> {
+    await axios.post(`${this.baseUrl}/restore`, { rawValue });
+  }
+
+  /**
+   * Batch sync equipment changes (ADD, MAP, TRASH)
+   */
+  async batchSync(changes: Array<{
+    id: string;
+    type: "ADD" | "MAP" | "TRASH";
+    rawValue: string;
+    targetValue?: string | string[];
+    equipmentId?: string;
+    equipmentName?: string;
+  }>, sourceSystem?: string, createdBy?: string): Promise<{
+    status: "success" | "partial" | "error";
+    results: Array<{
+      changeId: string;
+      success: boolean;
+      error?: string;
+    }>;
+    metrics?: {
+      totalChanges: number;
+      successfulChanges: number;
+      failedChanges: number;
+      processingTimeMs: number;
+    };
+  }> {
+    const response = await axios.post<{
+      status: string;
+      data: {
+        status: "success" | "partial" | "error";
+        results: Array<{
+          changeId: string;
+          success: boolean;
+          error?: string;
+        }>;
+        metrics?: {
+          totalChanges: number;
+          successfulChanges: number;
+          failedChanges: number;
+          processingTimeMs: number;
+        };
+      };
+    }>(`${this.baseUrl}/batch-sync`, {
+      changes,
+      sourceSystem: sourceSystem || "json-editor",
+      createdBy,
+    });
+    return response.data.data;
+  }
 }
 
 export const equipmentApi = new EquipmentApi();

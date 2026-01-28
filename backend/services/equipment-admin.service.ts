@@ -48,26 +48,7 @@ export class EquipmentAdminService {
     });
 
     if (existing) {
-      // If exists, create mapping and return
-      await prisma.equipmentMapping.upsert({
-        where: {
-          sourceSystem_rawValue: {
-            sourceSystem,
-            rawValue: upperRawValue,
-          },
-        },
-        update: {
-          equipmentId: existing.id,
-          updatedAt: new Date(),
-        },
-        create: {
-          sourceSystem,
-          rawValue: upperRawValue,
-          equipmentId: existing.id,
-          createdBy: createdBy || null,
-        },
-      });
-
+      // Equipment already exists - just return it (no mapping needed for ADD)
       // Invalidate dictionary cache to ensure fresh data on next request
       invalidateEquipmentDictionaryCache();
 
@@ -81,6 +62,7 @@ export class EquipmentAdminService {
     }
 
     // Create new canonical equipment
+    // NOTE: ADD does NOT create a mapping - only MAP actions create mappings
     const equipment = await prisma.equipment.create({
       data: {
         name: upperRawValue,
@@ -88,16 +70,6 @@ export class EquipmentAdminService {
         category: category || null,
         code: canonicalCode,
         source: sourceSystem,
-        createdBy: createdBy || null,
-      },
-    });
-
-    // Create mapping
-    await prisma.equipmentMapping.create({
-      data: {
-        sourceSystem,
-        rawValue: upperRawValue,
-        equipmentId: equipment.id,
         createdBy: createdBy || null,
       },
     });
@@ -297,6 +269,247 @@ export class EquipmentAdminService {
       },
       orderBy: { name: "asc" },
     });
+  }
+
+  /**
+   * Delete a mapping (undo mapping action)
+   * 
+   * @param rawValue The raw equipment value to unmap
+   * @param sourceSystem Source system identifier
+   */
+  async deleteMapping(
+    rawValue: string,
+    sourceSystem: string
+  ): Promise<void> {
+    const upperRawValue = rawValue.toUpperCase().trim();
+
+    await prisma.equipmentMapping.deleteMany({
+      where: {
+        sourceSystem,
+        rawValue: upperRawValue,
+      },
+    });
+
+    // Invalidate dictionary cache to ensure fresh data on next request
+    invalidateEquipmentDictionaryCache();
+  }
+
+  /**
+   * Restore equipment from trash (undo trash action)
+   * 
+   * @param rawValue The raw equipment value to restore
+   */
+  async restoreFromTrash(rawValue: string): Promise<void> {
+    const upperRawValue = rawValue.toUpperCase().trim();
+
+    // Find equipment in trash
+    const trashEquipment = await prisma.equipment.findFirst({
+      where: {
+        name: upperRawValue,
+        binCategory: "bin_trash",
+      },
+    });
+
+    if (trashEquipment) {
+      // Restore to bin_good
+      await prisma.equipment.update({
+        where: { id: trashEquipment.id },
+        data: {
+          binCategory: "bin_good",
+          updatedAt: new Date(),
+        },
+      });
+
+      // Invalidate dictionary cache to ensure fresh data on next request
+      invalidateEquipmentDictionaryCache();
+    }
+  }
+
+  /**
+   * Batch sync equipment changes (ADD, MAP, TRASH)
+   * Uses Prisma transaction for atomicity and processes changes efficiently
+   * 
+   * @param changes Array of equipment changes to sync
+   * @param sourceSystem Source system identifier
+   * @param createdBy Optional user identifier
+   */
+  async batchSyncEquipment(
+    changes: Array<{
+      id: string;
+      type: "ADD" | "MAP" | "TRASH";
+      rawValue: string;
+      targetValue?: string | string[];
+      equipmentId?: string;
+      equipmentName?: string;
+    }>,
+    sourceSystem: string = "json-editor",
+    createdBy?: string
+  ): Promise<{
+    status: "success" | "partial" | "error";
+    results: Array<{
+      changeId: string;
+      success: boolean;
+      error?: string;
+    }>;
+    metrics?: {
+      totalChanges: number;
+      successfulChanges: number;
+      failedChanges: number;
+      processingTimeMs: number;
+    };
+  }> {
+    const startTime = Date.now();
+    const results: Array<{
+      changeId: string;
+      success: boolean;
+      error?: string;
+    }> = [];
+
+    // Group changes by type for batch processing
+    const addChanges = changes.filter((c) => c.type === "ADD");
+    const mapChanges = changes.filter((c) => c.type === "MAP");
+    const trashChanges = changes.filter((c) => c.type === "TRASH");
+
+    try {
+      // Use Prisma transaction for atomicity
+      await prisma.$transaction(async (tx) => {
+        // Process ADD changes
+        for (const change of addChanges) {
+          try {
+            const name = change.rawValue.replace(/_/g, " ").toUpperCase();
+            // Use the existing method but skip cache invalidation (we'll do it once at the end)
+            await this.approveAsNewCanonical(
+              name,
+              sourceSystem,
+              undefined, // category
+              undefined, // code (auto-generated)
+              createdBy
+            );
+            results.push({ changeId: change.id, success: true });
+          } catch (error) {
+            results.push({
+              changeId: change.id,
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+
+        // Process MAP changes
+        for (const change of mapChanges) {
+          try {
+            if (!change.targetValue) {
+              results.push({
+                changeId: change.id,
+                success: false,
+                error: "targetValue is required for MAP changes",
+              });
+              continue;
+            }
+
+            // Get equipment IDs from target names
+            const targetNames = Array.isArray(change.targetValue)
+              ? change.targetValue
+              : [change.targetValue];
+
+            // Batch lookup all equipment by name
+            const targetEquipment = await tx.equipment.findMany({
+              where: {
+                name: { in: targetNames.map((n) => n.toUpperCase()) },
+                binCategory: "bin_good",
+              },
+              select: { id: true },
+            });
+
+            if (targetEquipment.length === 0) {
+              results.push({
+                changeId: change.id,
+                success: false,
+                error: "Target equipment not found",
+              });
+              continue;
+            }
+
+            const targetEquipmentIds = targetEquipment.map((e) => e.id);
+            await this.mapToExistingCanonical(
+              change.rawValue,
+              sourceSystem,
+              targetEquipmentIds[0],
+              createdBy,
+              targetEquipmentIds
+            );
+            results.push({ changeId: change.id, success: true });
+          } catch (error) {
+            results.push({
+              changeId: change.id,
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+
+        // Process TRASH changes
+        for (const change of trashChanges) {
+          try {
+            const name = change.rawValue.replace(/_/g, " ").toUpperCase();
+            await this.markAsTrash(name, sourceSystem, undefined, createdBy);
+            results.push({ changeId: change.id, success: true });
+          } catch (error) {
+            results.push({
+              changeId: change.id,
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+      });
+
+      // Invalidate dictionary cache once after all changes (performance optimization)
+      // Note: Individual methods also invalidate, but this ensures it's done once at the end
+      invalidateEquipmentDictionaryCache();
+
+      const successfulChanges = results.filter((r) => r.success).length;
+      const failedChanges = results.filter((r) => !r.success).length;
+      const processingTimeMs = Date.now() - startTime;
+
+      return {
+        status:
+          failedChanges === 0
+            ? "success"
+            : successfulChanges > 0
+            ? "partial"
+            : "error",
+        results,
+        metrics: {
+          totalChanges: changes.length,
+          successfulChanges,
+          failedChanges,
+          processingTimeMs,
+        },
+      };
+    } catch (error) {
+      // Transaction failed - mark all as failed
+      changes.forEach((change) => {
+        if (!results.find((r) => r.changeId === change.id)) {
+          results.push({
+            changeId: change.id,
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      });
+
+      return {
+        status: "error",
+        results,
+        metrics: {
+          totalChanges: changes.length,
+          successfulChanges: 0,
+          failedChanges: changes.length,
+          processingTimeMs: Date.now() - startTime,
+        },
+      };
+    }
   }
 }
 

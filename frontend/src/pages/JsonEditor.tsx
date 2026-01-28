@@ -15,8 +15,14 @@ import { EditorActions } from "../components/json-editor/EditorActions";
 import { JsonFieldsPanel } from "../components/json-editor/JsonFieldsPanel";
 import PageContainer from "../components/PageContainer";
 import LoadSpinner from "../components/ui/LoadSpinner";
+import { initializeCache } from "../utils/equipment-changes-manager";
 
 export function JsonEditor() {
+  // Initialize cache on component mount
+  useEffect(() => {
+    initializeCache();
+  }, []);
+
   const { data: dictionary, isLoading, error } = useEquipmentDictionary();
   const workingJson = useJsonEditorStore((state) => state.workingJson);
   const originalJson = useJsonEditorStore((state) => state.originalJson);

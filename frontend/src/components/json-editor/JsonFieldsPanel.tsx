@@ -45,7 +45,7 @@ function createOptionInputComponent(options: string[]) {
     return (
       <select
         value={value ?? ""}
-        onChange={(e) => setValue(e.target.value || undefined)}
+        onChange={(e) => setValue(e.target.value || "")}
         className="w-full px-1.5 py-1 text-xs border-2 border-gray-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-700 text-gray-200 transition-all"
       >
         <option value="">Select...</option>
@@ -312,7 +312,7 @@ export function JsonFieldsPanel() {
                 Input={StringInput}
               />
             )}
-            {getFieldValue("brand") !== undefined && (
+            {fieldExists("brand") && (
               <FieldRow
                 label="Brand"
                 value={getFieldValue("brand")}
@@ -320,7 +320,7 @@ export function JsonFieldsPanel() {
                 Input={BrandInputComponent}
               />
             )}
-            {getFieldValue("model") !== undefined && (
+            {fieldExists("model") && (
               <FieldRow
                 label="Model"
                 value={getFieldValue("model")}
@@ -393,7 +393,7 @@ export function JsonFieldsPanel() {
         {/* Engine & Performance */}
         <Section title="Engine & Performance" color="green">
           <div className="flex flex-col space-y-2">
-            {getFieldValue("fuel_type") !== undefined && (
+            {fieldExists("fuel_type") && (
               <FieldRow
                 label="Fuel Type"
                 value={getFieldValue("fuel_type")}
@@ -448,7 +448,7 @@ export function JsonFieldsPanel() {
         {/* Physical Characteristics */}
         <Section title="Physical Characteristics" color="purple">
           <div className="flex flex-col space-y-2">
-            {getFieldValue("body_type") !== undefined && (
+            {fieldExists("body_type") && (
               <FieldRow
                 label="Body Type"
                 value={getFieldValue("body_type")}
@@ -456,7 +456,7 @@ export function JsonFieldsPanel() {
                 Input={BodyTypeInputComponent}
               />
             )}
-            {getFieldValue("drive_type") !== undefined && (
+            {fieldExists("drive_type") && (
               <FieldRow
                 label="Drive Type"
                 value={getFieldValue("drive_type")}
@@ -464,7 +464,7 @@ export function JsonFieldsPanel() {
                 Input={DriveTypeInputComponent}
               />
             )}
-            {getFieldValue("transmission_type") !== undefined && (
+            {fieldExists("transmission_type") && (
               <FieldRow
                 label="Transmission"
                 value={getFieldValue("transmission_type")}
@@ -502,7 +502,7 @@ export function JsonFieldsPanel() {
         {/* Appearance & Regulations */}
         <Section title="Appearance & Regulations" color="amber">
           <div className="flex flex-col space-y-2">
-            {getFieldValue("exterior_color") !== undefined && (
+            {fieldExists("exterior_color") && (
               <FieldRow
                 label="Exterior Color"
                 value={getFieldValue("exterior_color")}
@@ -510,7 +510,7 @@ export function JsonFieldsPanel() {
                 Input={ColorInputComponent}
               />
             )}
-            {getFieldValue("interior_color") !== undefined && (
+            {fieldExists("interior_color") && (
               <FieldRow
                 label="Interior Color"
                 value={getFieldValue("interior_color")}
@@ -518,7 +518,7 @@ export function JsonFieldsPanel() {
                 Input={ColorInputComponent}
               />
             )}
-            {getFieldValue("interior_material") !== undefined && (
+            {fieldExists("interior_material") && (
               <FieldRow
                 label="Interior Material"
                 value={getFieldValue("interior_material")}
@@ -526,7 +526,7 @@ export function JsonFieldsPanel() {
                 Input={InteriorMaterialInputComponent}
               />
             )}
-            {getFieldValue("energy_efficiency") !== undefined && (
+            {fieldExists("energy_efficiency") && (
               <FieldRow
                 label="Energy Efficiency"
                 value={getFieldValue("energy_efficiency")}
@@ -534,7 +534,7 @@ export function JsonFieldsPanel() {
                 Input={EnergyEfficiencyInputComponent}
               />
             )}
-            {getFieldValue("euro_norm") !== undefined && (
+            {fieldExists("euro_norm") && (
               <FieldRow
                 label="Euro Norm"
                 value={getFieldValue("euro_norm")}
