@@ -11,6 +11,10 @@ export type Profile = {
   scene_id?: string;
   cut_type?: string;
   background?: Buffer;
+  // "sync" uses CarCutter's synchronous endpoint, the only one that applies `background`
+  endpoint?: "async" | "sync";
+  // Sync only: also render on this scene (light floor) and paint the floor white, see white-background.service
+  lightFloorSceneId?: string;
 };
 
 export type EditRequest = {
@@ -38,6 +42,16 @@ export const DEFAULT_PROFILES = {
   removebg: {
     cut_type: CUT_TYPES.DEFAULT,
     background: loadImage("../assets/white-bg.png"),
+  },
+  // Same retouching as eumotors/cartrade24, but fully white with a soft shadow and no license plate
+  // or overlay. Uses two CarCutter renders (2 credits) per image to remove CarCutter's 3D floor.
+  // To switch to a white 3D scene from CarCutter instead (1 credit), replace with:
+  // { scene_id: "<scene id>", cut_type: CUT_TYPES.DEFAULT }
+  white: {
+    endpoint: "sync",
+    cut_type: CUT_TYPES.DEFAULT,
+    background: loadImage("../assets/white-bg.jpg"),
+    lightFloorSceneId: SCENE_IDS.DEFAULT,
   },
 } as const;
 

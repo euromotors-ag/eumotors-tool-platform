@@ -8,12 +8,20 @@ type S3Config = {
   region: string;
 };
 
+/**
+ * Uploads the image and returns its public URL. The key is a content hash, so the same
+ * image always gets the same URL. Pass a `namespace` to get a different URL for the same image.
+ */
 export async function getTemporaryUrl(
   data: Buffer,
-  mimeType: string = ""
+  mimeType: string = "",
+  namespace: string = ""
 ): Promise<string> {
   const { client, bucket, region } = getS3Config();
-  const fileKey = createHash("sha256").update(data).digest("hex");
+  const fileKey = createHash("sha256")
+    .update(data)
+    .update(namespace)
+    .digest("hex");
 
   try {
     await uploadToS3(client, bucket, fileKey, data, mimeType);

@@ -4,6 +4,7 @@ export type ProfileType =
   | "eumotors"
   | "cartrade24"
   | "all"
+  | "white"
   | "removebg"
   | "download";
 
@@ -19,7 +20,7 @@ const ProfileSelector = memo(function ProfileSelector({
   return (
     <div>
       <h3 className="mb-2 text-xl font-medium">Select Style</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
         {/* Euro Motors Option */}
         <div
           className={`relative rounded-md ${
@@ -111,6 +112,38 @@ const ProfileSelector = memo(function ProfileSelector({
               </span>
               <span className="text-xs text-gray-400 hidden sm:block">
                 All overlays at once
+              </span>
+            </div>
+          </label>
+        </div>
+
+        {/* White Background Option */}
+        <div
+          className={`relative rounded-md ${
+            selectedProfile === "white"
+              ? "p-[1px] bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
+              : "p-0"
+          }`}>
+          <label
+            className={`flex cursor-pointer items-center rounded-md p-2 sm:p-3 bg-gray-800 w-full h-full
+              ${
+                selectedProfile !== "white"
+                  ? "border border-gray-700 hover:border-gray-600"
+                  : ""
+              }`}>
+            <input
+              type="radio"
+              value="white"
+              checked={selectedProfile === "white"}
+              onChange={() => setSelectedProfile("white")}
+              className="sr-only"
+            />
+            <div className="ml-2">
+              <span className="block font-medium text-white text-sm sm:text-base">
+                White
+              </span>
+              <span className="text-xs text-gray-400 hidden sm:block">
+                No logo or plate
               </span>
             </div>
           </label>

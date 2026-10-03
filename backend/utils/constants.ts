@@ -16,6 +16,11 @@ export const SCENE_IDS = {
   DEFAULT: "mey28",
 };
 
+export const PROCESSING_OPTIONS = {
+  SPEED: "normal",
+  RETOUCHING_ACCURACY: "precise",
+};
+
 export const CUT_TYPES = {
   DEFAULT: "complete",
   NORMAL: "normal",

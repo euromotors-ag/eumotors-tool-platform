@@ -1,10 +1,17 @@
 import { getEnvVar } from "@utils/get-env-var.js";
 
+const CAR_CUTTER_SUBMIT_URL = getEnvVar("CAR_CUTTER_SUBMIT_URL");
+
 // CarCutter API Configuration
 export const CAR_CUTTER_API = {
-  SUBMIT: getEnvVar("CAR_CUTTER_SUBMIT_URL"),
+  SUBMIT: CAR_CUTTER_SUBMIT_URL,
   STATUS: getEnvVar("CAR_CUTTER_STATUS_URL"),
   GET: getEnvVar("CAR_CUTTER_RESULT_URL"),
+  // Synchronous endpoint on the same host. Unlike the async API it accepts a custom `background`.
+  SYNC: new URL(
+    "/vehicle/composition/single-segment",
+    CAR_CUTTER_SUBMIT_URL
+  ).toString(),
   KEY: getEnvVar("CAR_CUTTER_API_KEY"),
 } as const;
 

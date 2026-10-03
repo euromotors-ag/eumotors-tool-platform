@@ -76,6 +76,8 @@ const ProfileStatusList: React.FC<Props> = ({
         return "Euro Motors";
       case "cartrade24":
         return "Car Trade 24";
+      case "white":
+        return "White Background";
       case "removebg":
         return "Remove BG";
       case "all":
