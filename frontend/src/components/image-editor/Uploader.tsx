@@ -10,7 +10,11 @@ import { ProfileStatus } from "./types/processing";
 import { FileSystemDirectoryHandle } from "./types/file-system.types";
 
 interface Props {
-  onImageProcessed: (imageUrl: string, visualIndex: number) => void;
+  onImageProcessed: (
+    imageUrl: string,
+    visualIndex: number,
+    profile?: string
+  ) => void;
   onSourceDirHandleChange: (
     dirHandle: FileSystemDirectoryHandle | null
   ) => void;
@@ -148,8 +152,8 @@ const Uploader = ({
   const getCurrentVisualOrder = useCallback(() => visualOrder, [visualOrder]);
 
   const handleImageProcessed = useCallback(
-    (imageUrl: string, visualIndex: number) => {
-      onImageProcessed(imageUrl, visualIndex);
+    (imageUrl: string, visualIndex: number, profile: string) => {
+      onImageProcessed(imageUrl, visualIndex, profile);
     },
     [onImageProcessed]
   );

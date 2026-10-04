@@ -170,7 +170,11 @@ export const useProcessingQueue = () => {
 
   const startProcessing = useCallback(
     async (
-      onImageProcessed: (imageUrl: string, visualIndex: number) => void
+      onImageProcessed: (
+        imageUrl: string,
+        visualIndex: number,
+        profile: string
+      ) => void
     ) => {
       if (queue.jobs.length === 0) {
         addLog("warning", "No jobs in queue to process");
@@ -233,6 +237,12 @@ export const useProcessingQueue = () => {
                 const visualIndex = job.visualOrder[i]; // Use visual index for filename
 
                 if (file) {
+                  // "Download Original" returns the uploaded file without calling the backend
+                  if (job.profile === "download") {
+                    onImageProcessed(URL.createObjectURL(file), visualIndex, job.profile);
+                    continue;
+                  }
+
                   addLog(
                     "api",
                     `Calling CarCutter API for image: ${file.name}`,
@@ -269,7 +279,7 @@ export const useProcessingQueue = () => {
                       visualIndex,
                     });
 
-                    onImageProcessed(imageUrl, visualIndex);
+                    onImageProcessed(imageUrl, visualIndex, job.profile);
                   } catch (apiError) {
                     const processingTime = Date.now() - startTime;
                     addLog("error", `Failed to process: ${file.name}`, {

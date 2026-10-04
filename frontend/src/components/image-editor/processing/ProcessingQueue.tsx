@@ -3,7 +3,7 @@ import { ProfileType } from "../ProfileSelector";
 import { useProcessingQueue } from "./hooks/useProcessingQueue";
 import ProfileStatusList from "./ProfileStatusList";
 import ProcessingControls from "./ProcessingControls";
-import { ProfileStatus } from "../types/processing";
+import { ALL_PROFILE_KEYS, ProfileStatus } from "../types/processing";
 
 interface ProcessingQueueProps {
   selectedImages: number[];
@@ -11,7 +11,7 @@ interface ProcessingQueueProps {
   selectedFiles: File[];
   visualOrder: number[];
   getCurrentVisualOrder: () => number[];
-  onImageProcessed: (imageUrl: string, visualIndex: number) => void;
+  onImageProcessed: (imageUrl: string, visualIndex: number, profile: string) => void;
   onProcessSelected: () => void;
   onProfileStatusesChange?: (profileStatuses: ProfileStatus[]) => void;
   onGetJobDataForProfileChange?: (
@@ -80,8 +80,12 @@ export default function ProcessingQueue({
       .map((index) => currentVisualOrder.indexOf(index))
       .filter((i) => i !== -1);
 
-    // Add to queue with actual files and visual order
-    addToQueue(selectedFilesArray, selectedProfile, visualIndexes);
+    // Add to queue with actual files and visual order ("All" adds one job per profile)
+    const profiles =
+      selectedProfile === "all" ? [...ALL_PROFILE_KEYS] : [selectedProfile];
+    profiles.forEach((profile) =>
+      addToQueue(selectedFilesArray, profile, visualIndexes)
+    );
 
     // Clear selection after images are added to queue
     onProcessSelected();

@@ -1,25 +1,33 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Uploader from "../components/image-editor/Uploader";
 import ProcessedImagesGallery from "../components/image-editor/ProcessedImagesGallery";
 import { FileSystemDirectoryHandle } from "../components/image-editor/types/file-system.types";
 import PageContainer from "@/components/PageContainer";
 
+type ProcessedImage = {
+  url: string;
+  visualIndex: number;
+  profile?: string;
+};
+
 function Image() {
-  const [processedImages, setProcessedImages] = useState<string[]>([]);
+  const [processedImages, setProcessedImages] = useState<ProcessedImage[]>([]);
   const [sourceDirHandle, setSourceDirHandle] =
     useState<FileSystemDirectoryHandle | null>(null);
-  const [visualIndexes, setVisualIndexes] = useState<number[]>([]); // Ändra från originalIndexes till visualIndexes
 
-  const handleImageProcessed = (imageUrl: string, visualIndex: number) => {
-    setProcessedImages((prev) => [...prev, imageUrl]);
-    // Lägg till visualIndex
-    setVisualIndexes((prev) => [...prev, visualIndex]);
+  const handleImageProcessed = (
+    url: string,
+    visualIndex: number,
+    profile?: string
+  ) => {
+    setProcessedImages((prev) => [...prev, { url, visualIndex, profile }]);
   };
 
   const handleImagesChanged = (updatedImages: string[]) => {
-    setProcessedImages(updatedImages);
-    // Uppdatera visualIndexes för att matcha de kvarvarande bilderna
-    setVisualIndexes((prev) => prev.slice(0, updatedImages.length));
+    // Keep the index and profile of the remaining images (matched by URL)
+    setProcessedImages((prev) =>
+      prev.filter((image) => updatedImages.includes(image.url))
+    );
   };
 
   const handleSourceDirHandleChange = (
@@ -27,6 +35,15 @@ function Image() {
   ) => {
     setSourceDirHandle(dirHandle);
   };
+
+  const galleryImages = useMemo(
+    () => ({
+      urls: processedImages.map((image) => image.url),
+      visualIndexes: processedImages.map((image) => image.visualIndex),
+      profiles: processedImages.map((image) => image.profile),
+    }),
+    [processedImages]
+  );
 
   return (
     <div className="bg-background text-foreground min-h-screen py-8">
@@ -43,10 +60,11 @@ function Image() {
         />
 
         <ProcessedImagesGallery
-          images={processedImages}
+          images={galleryImages.urls}
           sourceDirHandle={sourceDirHandle}
           onImagesChanged={handleImagesChanged}
-          visualIndexes={visualIndexes} // Skicka med visualIndexes
+          visualIndexes={galleryImages.visualIndexes}
+          profiles={galleryImages.profiles}
         />
       </PageContainer>
     </div>

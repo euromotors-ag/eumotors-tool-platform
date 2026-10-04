@@ -10,13 +10,20 @@ interface Props {
   onImagesChanged?: (images: string[]) => void;
   sourceDirHandle?: FileSystemDirectoryHandle | null;
   visualIndexes?: number[];
+  profiles?: (string | undefined)[];
 }
+
+// Suffix used in file names when the same car image exists in several versions
+const PROFILE_FILE_LABELS: Record<string, string> = {
+  download: "original",
+};
 
 export default function ProcessedImagesGallery({
   images,
   onImagesChanged,
   sourceDirHandle,
   visualIndexes,
+  profiles,
 }: Props) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [localImages, setLocalImages] = useState<string[]>(images);
@@ -42,9 +49,25 @@ export default function ProcessedImagesGallery({
   const generateFileName = useCallback(
     (index: number, extension: string = "png"): string => {
       const visualIndex = getVisualIndex(index);
-      return `processed-car-${visualIndex + 1}.${extension}`;
+      const baseName = `processed-car-${visualIndex + 1}`;
+
+      // Several versions of the same car image (e.g. "All") need unique names
+      const versions = localImages
+        .map((_, i) => i)
+        .filter((i) => getVisualIndex(i) === visualIndex);
+      if (versions.length <= 1) {
+        return `${baseName}.${extension}`;
+      }
+
+      const profile = profiles?.[index];
+      const label = profile ? PROFILE_FILE_LABELS[profile] ?? profile : "version";
+      const sameLabelBefore = versions.filter(
+        (i) => i < index && profiles?.[i] === profile
+      ).length;
+      const counter = sameLabelBefore > 0 ? `-${sameLabelBefore + 1}` : "";
+      return `${baseName}-${label}${counter}.${extension}`;
     },
-    [getVisualIndex]
+    [getVisualIndex, localImages, profiles]
   );
 
   const fetchImageAsBlob = useCallback(async (url: string): Promise<Blob> => {

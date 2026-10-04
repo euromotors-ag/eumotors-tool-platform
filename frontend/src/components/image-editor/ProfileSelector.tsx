@@ -108,10 +108,10 @@ const ProfileSelector = memo(function ProfileSelector({
             />
             <div className="ml-2">
               <span className="block font-medium text-white text-sm sm:text-base">
-                Both
+                All
               </span>
               <span className="text-xs text-gray-400 hidden sm:block">
-                All overlays at once
+                Euro Motors, Car Trade 24 & White
               </span>
             </div>
           </label>

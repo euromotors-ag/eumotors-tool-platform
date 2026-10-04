@@ -1,3 +1,6 @@
+// The "All" option processes each image with these backend profiles
+export const ALL_PROFILE_KEYS = ["eumotors", "cartrade24", "white"] as const;
+
 export interface ProcessingJob {
   id: string;
   files: File[]; // Använd File-objekt istället för index
