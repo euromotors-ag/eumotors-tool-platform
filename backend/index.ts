@@ -9,52 +9,24 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 // Now import other modules that depend on environment variables
-import express from "express";
+import express, { Router } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { validateEnvironmentVariables } from "@utils/validate-env.js";
-import { requireAuth } from "@clerk/express";
 
 // Validate environment variables
 validateEnvironmentVariables();
 
-// Lazy-load routes AFTER environment variables are loaded
-let imageRoutes: any;
-let scrapeRoutes: any;
-let equipmentRoutes: any;
-let enumRoutes: any;
-let referenceRoutes: any;
+// Routes are imported after the environment is loaded, because the CarCutter and S3
+// config read environment variables on import (static imports are hoisted above dotenv)
+const [{ default: imageRoutes }, { default: scrapeRoutes }] = await Promise.all([
+  import("@routes/image.routes.js"),
+  import("@routes/scrape.routes.js"),
+]);
 
-// Initialize routes after environment variables are loaded
-(async () => {
-  const routesModule = await import("@routes/image.routes.js");
-  const scrapeModule = await import("@routes/scrape.routes.js");
-  const equipmentModule = await import("@routes/equipment.routes.js");
-  const enumModule = await import("@routes/enum.routes.js");
-  const referenceModule = await import("@routes/reference.routes.js");
+startServer(imageRoutes, scrapeRoutes);
 
-  imageRoutes = routesModule.default;
-  scrapeRoutes = scrapeModule.default;
-  equipmentRoutes = equipmentModule.default;
-  enumRoutes = enumModule.default;
-  referenceRoutes = referenceModule.default;
-
-  startServer();
-  
-  // Warm up equipment dictionary cache after server starts
-  // This reduces first request latency
-  const referenceServiceModule = await import("@services/reference.service.js");
-  if (referenceServiceModule.warmupEquipmentDictionaryCache) {
-    referenceServiceModule.warmupEquipmentDictionaryCache().catch((error) => {
-      // Silent fail - cache will be populated on first request
-      if (process.env.NODE_ENV === "development") {
-        console.warn("Cache warmup failed:", error);
-      }
-    });
-  }
-})();
-
-function startServer() {
+function startServer(imageRoutes: Router, scrapeRoutes: Router) {
   const app = express();
   const PORT = parseInt(process.env.PORT || "3000", 10);
 
@@ -74,29 +46,17 @@ function startServer() {
       origin: (origin, callback) => {
         const allowedOrigins = getAllowedOrigins();
 
-        console.log(`Inkommande begäran från: ${origin || "Ingen origin"}`);
-        console.log(`Tillåtna ursprung: ${JSON.stringify(allowedOrigins)}`);
-
-        // Tillåt requests utan origin (som mobil-appar eller REST-klienter)
+        // Allow requests without origin (REST clients, health checks)
         if (!origin) return callback(null, true);
 
-        // Kontrollera om ursprunget är tillåtet
-        if (typeof allowedOrigins === "string" && allowedOrigins === "*") {
-          return callback(null, true);
-        }
-
-        if (
-          Array.isArray(allowedOrigins) &&
-          (allowedOrigins.includes(origin) || allowedOrigins.includes("*"))
-        ) {
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
           return callback(null, true);
         }
 
         callback(new Error("Not allowed by CORS"));
       },
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization", "Accept", "If-None-Match", "ETag"],
-      exposedHeaders: ["ETag"],
+      methods: ["GET", "POST", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "Accept"],
       credentials: true,
     })
   );
@@ -125,12 +85,9 @@ function startServer() {
     })
   );
 
-  // API Routes with Clerk authentication
-  app.use("/api/v1/images", imageRoutes); // Temporarily removed requireAuth() for testing
+  // API Routes
+  app.use("/api/v1/images", imageRoutes);
   app.use("/api/v1/scrape", scrapeRoutes);
-  app.use("/api/v1/equipment", equipmentRoutes);
-  app.use("/api/v1/enums", enumRoutes);
-  app.use("/api/reference", referenceRoutes);
 
   // Health check endpoint
   app.get("/api/health", (req, res) => {
@@ -145,6 +102,3 @@ function startServer() {
     console.log(`Server running on port ${PORT}`);
   });
 }
-
-// Export the app (will be undefined until startServer() is called)
-export default {} as any;

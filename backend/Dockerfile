@@ -2,12 +2,8 @@ FROM node:22.12-slim AS build
 WORKDIR /app
 
 COPY package*.json ./
-COPY prisma ./prisma
-COPY prisma.config.ts ./
 RUN npm ci
 COPY . .
-# Generate Prisma Client before building (required for TypeScript compilation)
-RUN npx prisma generate
 RUN npm run build
 
 FROM node:22.12-slim AS runner
@@ -18,13 +14,9 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/dist ./dist
 COPY package*.json ./
-COPY prisma ./prisma
 
 # Install runtime dependencies only (Playwright will install browsers via postinstall)
 RUN npm ci --omit=dev
-
-# Generate Prisma Client for production runtime
-RUN npx prisma generate
 
 ENV PLAYWRIGHT_HEADLESS=1
 ENV NODE_ENV=production

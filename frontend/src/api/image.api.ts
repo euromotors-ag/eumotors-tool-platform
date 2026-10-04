@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "./api-endpoints";
+import { getAuthToken } from "./auth-token";
 
 // Mock function
 async function getMockProcessedImage(): Promise<Blob> {
@@ -9,10 +10,6 @@ async function getMockProcessedImage(): Promise<Blob> {
   return response.blob();
 }
 
-const getAuthToken = (): string | null => {
-  return localStorage.getItem("auth_token");
-};
-
 // Real Image API function
 export const imageApi = {
   processImage: async (formData: FormData): Promise<Blob> => {
@@ -20,7 +17,7 @@ export const imageApi = {
       return getMockProcessedImage();
     }
 
-    const token = getAuthToken();
+    const token = await getAuthToken();
 
     try {
       const response = await fetch(API_ENDPOINTS.images.process, {
@@ -36,7 +33,7 @@ export const imageApi = {
         // Om svaret är 401 (Unauthorized), försök dirigera användaren till inloggningssidan
         if (response.status === 401) {
           console.error("Authorization failed. Redirecting to login...");
-          window.location.href = "/login";
+          window.location.href = "/sign-in";
           throw new Error("Authentication required");
         }
 
