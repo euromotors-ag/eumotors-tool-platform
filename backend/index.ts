@@ -13,6 +13,7 @@ import express, { Router } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { validateEnvironmentVariables } from "@utils/validate-env.js";
+import { requireSignedIn } from "@middlewares/auth.js";
 
 // Validate environment variables
 validateEnvironmentVariables();
@@ -85,7 +86,8 @@ function startServer(imageRoutes: Router, scrapeRoutes: Router) {
     })
   );
 
-  // API Routes
+  // API Routes: only for users signed in to the frontend
+  app.use("/api/v1", requireSignedIn(getAllowedOrigins()));
   app.use("/api/v1/images", imageRoutes);
   app.use("/api/v1/scrape", scrapeRoutes);
 

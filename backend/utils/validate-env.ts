@@ -8,6 +8,7 @@ export function validateEnvironmentVariables() {
     "CAR_CUTTER_SUBMIT_URL",
     "CAR_CUTTER_STATUS_URL",
     "CAR_CUTTER_RESULT_URL",
+    "CLERK_SECRET_KEY",
   ];
 
   const recommendedVars = ["ALLOWED_ORIGINS"];

@@ -22,6 +22,9 @@ Environment variables: backend in `backend/utils/validate-env.ts`, frontend in `
 
 ## API
 
+All `/api/v1` routes require a signed-in user (`Authorization: Bearer <Clerk session token>`,
+verified with `CLERK_SECRET_KEY`). Requests without a valid token get 401.
+
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/api/v1/images/process` | Process one image with a profile (`eumotors`, `cartrade24`, `white`, `removebg`) |
