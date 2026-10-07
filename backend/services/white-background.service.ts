@@ -19,8 +19,13 @@ const CAR_DIFF_HIGH = 24;
 const CAR_RIM_SIZE = 9;
 // Identical areas smaller than this share of the image are noise in deep shadow, not car
 const MIN_CAR_COMPONENT_SHARE = 0.001;
-// The floor in the white render is dark; it is found by flooding from the bottom edge
+// The floor in the white render is dark; it is flood-filled from the lowest image row that
+// contains it (CarCutter does not always extend the floor to the bottom edge of the image)
 const FLOOR_MAX_LUMINANCE = 140;
+// A row seeds the floor when at least this share of its pixels is floor-like
+const FLOOR_SEED_MIN_ROW_SHARE = 0.2;
+// Only this lower share of the image is searched for the seed row
+const FLOOR_SEED_SEARCH_SHARE = 0.6;
 // Grows the floor over its anti-aliased boundary with the white backdrop
 const FLOOR_BOUNDARY_SIZE = 7;
 // Removes the turntable ring and floor texture before reading the shadow
@@ -65,9 +70,31 @@ export async function compositeOnWhite(
     );
   }
 
-  const carCore = findCar(diff, width, height);
+  const { car: carCore, share: carShare } = findCar(diff, width, height);
+  if (carShare > MAX_CAR_SHARE) {
+    // Both renders are the same image: CarCutter found no car to cut out (interior photo,
+    // detail shot), so there is no floor to replace either
+    console.warn(
+      `[white] renders are identical (car share ${carShare.toFixed(2)}), returning the render as is`
+    );
+    return withWhiteBackdrop;
+  }
+
   const nearCar = rankFilter(carCore, width, height, CAR_RIM_SIZE, "max");
-  const floorArea = findFloor(backdrop.data, carCore, width, height);
+  const { floor: floorArea, seedRow } = findFloor(
+    backdrop.data,
+    carCore,
+    width,
+    height
+  );
+  const floorShare = countNonZero(floorArea) / pixelCount;
+  console.log(
+    `[white] ${width}x${height}: car ${carShare.toFixed(2)}, floor ${floorShare.toFixed(2)}` +
+      (seedRow < 0 ? ", no floor found" : `, floor seeded at row ${seedRow}`)
+  );
+  if (seedRow < 0) {
+    console.warn("[white] no floor found in the white render, nothing was replaced");
+  }
 
   const alpha = new Float32Array(pixelCount);
   for (let i = 0; i < pixelCount; i++) {
@@ -105,9 +132,14 @@ export async function compositeOnWhite(
 }
 
 /**
- * Car = large areas that are identical in both renders (255 = car, 0 = not)
+ * Car = large areas that are identical in both renders (255 = car, 0 = not), with the share
+ * of the image they cover. A share above MAX_CAR_SHARE means the renders are the same image.
  */
-function findCar(diff: Uint8Array, width: number, height: number): Uint8Array {
+function findCar(
+  diff: Uint8Array,
+  width: number,
+  height: number
+): { car: Uint8Array; share: number } {
   const identical = Uint8Array.from(diff, (value) =>
     value <= CAR_DIFF_LOW ? 255 : 0
   );
@@ -118,30 +150,29 @@ function findCar(diff: Uint8Array, width: number, height: number): Uint8Array {
     Math.round(width * height * MIN_CAR_COMPONENT_SHARE)
   );
 
-  let carPixels = 0;
-  for (let i = 0; i < car.length; i++) {
-    if (car[i]) carPixels++;
-  }
-  const carShare = carPixels / car.length;
-  if (carShare < MIN_CAR_SHARE || carShare > MAX_CAR_SHARE) {
+  const share = countNonZero(car) / car.length;
+  if (share < MIN_CAR_SHARE) {
     throw new Error(
-      `Could not separate the car from the floor (car share ${carShare.toFixed(2)})`
+      `Could not separate the car from the floor (car share ${share.toFixed(2)})`
     );
   }
 
-  return car;
+  return { car, share };
 }
 
 /**
- * Floor = dark area of the white render connected to the bottom edge, plus its boundary.
- * Windows are dark too, but they are enclosed by the car and never reach the bottom edge.
+ * Floor = dark area of the white render flood-filled from the lowest row that contains floor,
+ * plus its boundary. The floor is usually cut by the bottom edge, but for some framings
+ * CarCutter ends the floor ellipse above it and leaves a strip of white backdrop below.
+ * Windows are dark too, but they sit above the floor, enclosed by the car.
+ * `seedRow` is -1 when no floor was found.
  */
 function findFloor(
   backdrop: Buffer,
   carCore: Uint8Array,
   width: number,
   height: number
-): Uint8Array {
+): { floor: Uint8Array; seedRow: number } {
   const pixelCount = width * height;
   const isCandidate = (i: number) =>
     !carCore[i] &&
@@ -153,8 +184,12 @@ function findFloor(
   let head = 0;
   let tail = 0;
 
+  const seedRow = findFloorSeedRow(isCandidate, width, height);
+  if (seedRow < 0) {
+    return { floor: floorArea, seedRow };
+  }
   for (let x = 0; x < width; x++) {
-    const i = (height - 1) * width + x;
+    const i = seedRow * width + x;
     if (isCandidate(i)) {
       floorArea[i] = 255;
       queue[tail++] = i;
@@ -181,7 +216,27 @@ function findFloor(
   for (let i = 0; i < pixelCount; i++) {
     if (carCore[i]) grown[i] = 0;
   }
-  return grown;
+  return { floor: grown, seedRow };
+}
+
+/**
+ * Lowest row (searching upwards from the bottom edge) where enough pixels are floor-like
+ */
+function findFloorSeedRow(
+  isCandidate: (i: number) => boolean,
+  width: number,
+  height: number
+): number {
+  const minCandidates = width * FLOOR_SEED_MIN_ROW_SHARE;
+  const lowestRow = Math.floor(height * (1 - FLOOR_SEED_SEARCH_SHARE));
+  for (let y = height - 1; y >= lowestRow; y--) {
+    let candidates = 0;
+    for (let x = 0; x < width; x++) {
+      if (isCandidate(y * width + x)) candidates++;
+    }
+    if (candidates >= minCandidates) return y;
+  }
+  return -1;
 }
 
 /**
@@ -394,6 +449,14 @@ async function decodeRgb(image: Buffer): Promise<RawImage> {
     throw new Error(`Expected an RGB image, got ${info.channels} channels`);
   }
   return { data, width: info.width, height: info.height };
+}
+
+function countNonZero(mask: Uint8Array): number {
+  let count = 0;
+  for (let i = 0; i < mask.length; i++) {
+    if (mask[i]) count++;
+  }
+  return count;
 }
 
 function luminance(red: number, green: number, blue: number): number {
